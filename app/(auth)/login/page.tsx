@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
+import { loginUser } from '@/lib/api';
+import { saveToken } from '@/lib/auth';
 
 /* ── Mock stock-chart SVG decoration ───────────────────────────────────────── */
 function MiniChart() {
@@ -88,14 +90,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    router.push('/dashboard');
+    setError('');
+    try {
+      const response = await loginUser(email, password);
+      saveToken(response.access_token);
+      router.push('/dashboard');
+    } catch {
+      setError('Invalid email or password. Please try again.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -219,6 +227,11 @@ export default function LoginPage() {
                     {!loading && <LogIn className="h-4 w-4" />}
                     {loading ? 'Signing in…' : 'Sign In'}
                   </Button>
+                  {error && (
+                    <p className="mt-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-center text-sm text-danger">
+                      {error}
+                    </p>
+                  )}
                 </form>
 
                 {/* ── Divider ── */}
