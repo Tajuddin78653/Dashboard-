@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+@theme {
+  /* Navy palette */
+  --color-navy-950: #040d21;
+  --color-navy-900: #071330;
+  --color-navy-800: #0d1f4c;
+  --color-navy-700: #122666;
+  --color-navy-600: #1a3380;
+
+  /* Gold palette */
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+
+  /* Semantic surface tokens */
+  --color-surface: #0d1f4c;   /* navy-800 */
+  --color-card:    #071330;   /* navy-900 */
+  --color-border:  #1e2d5a;
+  --color-muted:   #4a5a8a;
+
+  /* State colors */
+  --color-success: #22c55e;
+  --color-danger:  #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Fonts */
+  --font-inter:    var(--font-inter);
+  --font-mono:     var(--font-jetbrains-mono);
+
+  /* Custom animations */
+  --animate-fade-in:    fade-in 0.3s ease forwards;
+  --animate-slide-up:   slide-up 0.3s ease forwards;
+  --animate-pulse-gold: pulse-gold 2s ease-in-out infinite;
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+  50%       { box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.35); }
+}
+
+/* ─── Base Layer ────────────────────────────────────────────────────────────── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    height: 100%;
+    font-family: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+    background-color: var(--color-navy-950);
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--color-navy-950);
+  }
+
+  /* Gold selection highlight */
+  ::selection {
+    background-color: rgba(251, 191, 36, 0.3);
+    color: #fff;
+  }
+
+  /* ── Custom Scrollbar ── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-navy-900);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-gold-600);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gold-500);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gold-600) var(--color-navy-900);
+  }
+}
+
+/* ─── Utility Classes ───────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Monospace font for price/number displays */
+  .font-mono {
+    font-family: var(--font-jetbrains-mono, ui-monospace, "JetBrains Mono", Menlo, monospace);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* P&L colours */
+  .text-profit {
+    color: var(--color-success);
+  }
+
+  .text-loss {
+    color: var(--color-danger);
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: var(--animate-fade-in);
+  }
+
+  .animate-slide-up {
+    animation: var(--animate-slide-up);
+  }
+
+  .animate-pulse-gold {
+    animation: var(--animate-pulse-gold);
+  }
+
+  /* Card border-left accent */
+  .card-accent-gold {
+    border-left: 3px solid var(--color-gold-500);
+  }
+
+  /* Gold focus ring */
+  .focus-gold:focus {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+  }
+
+  .focus-gold:focus-visible {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+  }
+}
