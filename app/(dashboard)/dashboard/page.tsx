@@ -1,41 +1,10 @@
-import { Zap, TrendingUp, IndianRupee, Target, CalendarDays, BarChart2 } from 'lucide-react';
-import { StatCard, Card } from '@/components/ui';
+import { CalendarDays, BarChart2, Zap } from 'lucide-react';
+import { Card } from '@/components/ui';
 import type { BadgeStatus } from '@/components/ui';
 import { DailyPnLChart } from './DailyPnLChart';
 import { StrategyPerformanceChart } from './StrategyPerformanceChart';
 import { RecentSignalsTable } from './RecentSignalsTable';
-
-// ─── Mock stat data ───────────────────────────────────────────────────────────
-const stats = [
-  {
-    label: 'Total Signals',
-    value: '1,247',
-    icon: Zap,
-    delta: 12.5,
-    deltaLabel: 'this month',
-  },
-  {
-    label: 'Open Trades',
-    value: '8',
-    icon: TrendingUp,
-    delta: 2,
-    deltaLabel: 'today',
-  },
-  {
-    label: "Today P&L",
-    value: '₹24,580',
-    icon: IndianRupee,
-    delta: 8.3,
-    deltaLabel: 'vs yesterday',
-  },
-  {
-    label: 'Win Rate',
-    value: '68.4%',
-    icon: Target,
-    delta: 2.1,
-    deltaLabel: 'this month',
-  },
-] as const;
+import DashboardStats from './DashboardStats';
 
 // ─── Mock P&L line data (last 30 trading days) ────────────────────────────────
 export const dailyPnLData = [
@@ -107,19 +76,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
 
-      {/* ── Row 1: Stat Cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => (
-          <StatCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            icon={s.icon}
-            delta={s.delta}
-            deltaLabel={s.deltaLabel}
-          />
-        ))}
-      </div>
+      {/* ── Row 1: Stat Cards (live from API) ─────────────────────────────── */}
+      <DashboardStats />
 
       {/* ── Row 2: Charts ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
