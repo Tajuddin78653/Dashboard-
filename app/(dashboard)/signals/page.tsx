@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Zap,
   Search,
@@ -11,8 +11,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Badge, Button, Card, Input, Select } from '@/components/ui';
+import { Badge, Button, Card, Input, Select, Skeleton, EmptyState } from '@/components/ui';
 import type { BadgeStatus } from '@/components/ui';
+import { getSignals } from '@/lib/api';
+import type { SignalResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -82,12 +84,33 @@ const STATS = [
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function SignalsPage() {
-  // Filter state (UI only — no actual filtering logic)
   const [fromDate, setFromDate]   = useState('');
   const [toDate, setToDate]       = useState('');
   const [strategy, setStrategy]   = useState('');
   const [signalType, setSignalType] = useState('');
   const [symbolSearch, setSymbolSearch] = useState('');
+  const [signals, setSignals]     = useState<SignalResponse[]>([]);
+  const [total, setTotal]         = useState(0);
+  const [loading, setLoading]     = useState(true);
+  const [page, setPage]           = useState(1);
+
+  const fetchSignals = useCallback(async (pg = 1) => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { page: String(pg), page_size: '20' };
+      if (symbolSearch) params.symbol = symbolSearch;
+      if (signalType)   params.signal_type = signalType;
+      if (fromDate)     params.date_from = fromDate;
+      if (toDate)       params.date_to = toDate;
+      const data = await getSignals(params);
+      setSignals(data.items);
+      setTotal(data.total);
+      setPage(pg);
+    } catch { /* keep existing */ }
+    finally { setLoading(false); }
+  }, [symbolSearch, signalType, fromDate, toDate]);
+
+  useEffect(() => { fetchSignals(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -166,7 +189,7 @@ export default function SignalsPage() {
 
           {/* Action buttons */}
           <div className="flex gap-2 pb-0.5">
-            <Button variant="primary" size="sm">Apply Filters</Button>
+            <Button variant="primary" size="sm" onClick={() => fetchSignals(1)}>Apply Filters</Button>
             <Button
               variant="ghost"
               size="sm"
@@ -176,6 +199,7 @@ export default function SignalsPage() {
                 setStrategy('');
                 setSignalType('');
                 setSymbolSearch('');
+                setTimeout(() => fetchSignals(1), 0);
               }}
             >
               Clear
@@ -224,74 +248,52 @@ export default function SignalsPage() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_SIGNALS.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    'border-b border-[#1e2d5a]/50 transition-colors hover:bg-navy-700/40',
-                    idx % 2 === 0 ? 'bg-navy-900' : 'bg-navy-800/30',
-                    // First 2 rows get the "new signal" pulse animation via a left-border
-                    idx < 2 && 'animate-pulse-gold',
-                  )}
-                >
-                  {/* # */}
-                  <td className="px-4 py-3 text-xs text-[#4a5a8a] font-mono">{row.id}</td>
-
-                  {/* Time */}
-                  <td className="px-4 py-3 font-mono text-xs text-slate-300">{row.time}</td>
-
-                  {/* Symbol */}
-                  <td className="px-4 py-3">
-                    <span className="font-semibold text-white tracking-wide">{row.symbol}</span>
-                  </td>
-
-                  {/* Signal Type */}
-                  <td className="px-4 py-3">
-                    {row.signalType === 'BUY' ? (
-                      <span className="inline-flex items-center gap-1 text-green-400 font-semibold text-xs">
-                        <ArrowUpRight className="h-3.5 w-3.5" />
-                        BUY
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-red-400 font-semibold text-xs">
-                        <ArrowDownRight className="h-3.5 w-3.5" />
-                        SELL
-                      </span>
+              {loading ? (
+                [...Array(8)].map((_, i) => (
+                  <tr key={i} className="border-b border-[#1e2d5a]/50">
+                    {[...Array(8)].map((__, j) => (
+                      <td key={j} className="px-4 py-3"><div className="h-4 rounded bg-navy-700 animate-pulse" /></td>
+                    ))}
+                  </tr>
+                ))
+              ) : signals.length === 0 ? (
+                <tr><td colSpan={8} className="py-12 text-center text-muted text-sm">No signals found</td></tr>
+              ) : (
+                signals.map((row, idx) => (
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      'border-b border-[#1e2d5a]/50 transition-colors hover:bg-navy-700/40',
+                      idx % 2 === 0 ? 'bg-navy-900' : 'bg-navy-800/30',
+                      idx < 2 && 'animate-pulse-gold',
                     )}
-                  </td>
-
-                  {/* Entry Price */}
-                  <td className="px-4 py-3 font-mono text-sm text-slate-200">
-                    ₹{row.entryPrice}
-                  </td>
-
-                  {/* Strategy */}
-                  <td className="px-4 py-3 text-xs text-[#4a5a8a]">{row.strategy}</td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <Badge status={row.status} />
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button
-                        aria-label="View signal"
-                        className="rounded p-1.5 text-[#4a5a8a] transition-colors hover:bg-navy-700 hover:text-gold-400 focus-gold focus-visible:outline-none"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        aria-label="Edit signal"
-                        className="rounded p-1.5 text-[#4a5a8a] transition-colors hover:bg-navy-700 hover:text-gold-400 focus-gold focus-visible:outline-none"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                  >
+                    <td className="px-4 py-3 text-xs text-[#4a5a8a] font-mono">{idx + 1}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                      {new Date(row.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-4 py-3"><span className="font-semibold text-white tracking-wide">{row.symbol}</span></td>
+                    <td className="px-4 py-3">
+                      {row.signal_type === 'BUY' ? (
+                        <span className="inline-flex items-center gap-1 text-green-400 font-semibold text-xs"><ArrowUpRight className="h-3.5 w-3.5" /> BUY</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-red-400 font-semibold text-xs"><ArrowDownRight className="h-3.5 w-3.5" /> SELL</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-sm text-slate-200">
+                      {row.entry_price ? `₹${row.entry_price.toLocaleString('en-IN')}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[#4a5a8a]">{row.strategy_id ?? '—'}</td>
+                    <td className="px-4 py-3"><Badge status={row.status as BadgeStatus} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button aria-label="View signal" className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"><Eye className="h-3.5 w-3.5" /></button>
+                        <button aria-label="Edit signal" className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"><Edit2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
