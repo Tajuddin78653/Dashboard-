@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { isAuthenticated } from '@/lib/auth';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,6 +28,14 @@ function getPageTitle(pathname: string): string {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Auth guard — redirect to /login if no valid token
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login');
+    }
+  }, [router]);
 
   // Sidebar collapse state — starts collapsed on narrow screens
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
