@@ -2,11 +2,20 @@
 
 import { Table, Badge, type TableColumn } from '@/components/ui';
 import type { BadgeStatus } from '@/components/ui';
-import type { Signal } from './page';
+
+// Local type definition (no longer imported from page.tsx)
+export interface Signal {
+  time: string;
+  symbol: string;
+  signalType: string;
+  price: string;
+  strategy: string;
+  status: BadgeStatus;
+}
 
 const columns: TableColumn<Record<string, unknown>>[] = [
-  { key: 'time',       label: 'Time',    sortable: true, className: 'font-mono text-xs text-[#7a8db3]' },
-  { key: 'symbol',     label: 'Symbol',  sortable: true, className: 'font-semibold text-white' },
+  { key: 'time',       label: 'Time',     sortable: true, className: 'font-mono text-xs text-[#7a8db3]' },
+  { key: 'symbol',     label: 'Symbol',   sortable: true, className: 'font-semibold text-white' },
   {
     key: 'signalType',
     label: 'Signal',
