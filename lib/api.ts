@@ -26,7 +26,11 @@ export interface TradeListResponse {
   total: number; page: number; page_size: number; items: TradeResponse[];
 }
 export interface SummaryStats {
-  total_signals: number; open_trades: number; today_pnl: number; overall_win_rate: number | null;
+  total_signals: number;    // lifetime total
+  today_signals: number;    // signals received today
+  open_trades: number;
+  today_pnl: number;
+  overall_win_rate: number | null;
 }
 export interface StrategyMetrics {
   strategy_id: string; strategy_name: string; total_signals: number; total_trades: number;
