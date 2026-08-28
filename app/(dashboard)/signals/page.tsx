@@ -13,58 +13,11 @@ import {
 } from 'lucide-react';
 import { Badge, Button, Card, Input, Select, Skeleton, EmptyState } from '@/components/ui';
 import type { BadgeStatus } from '@/components/ui';
-import { getSignals } from '@/lib/api';
-import type { SignalResponse } from '@/lib/api';
+import { getSignals, getStrategies } from '@/lib/api';
+import type { SignalResponse, StrategyResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type SignalType = 'BUY' | 'SELL';
-
-interface SignalRow {
-  id: number;
-  time: string;
-  symbol: string;
-  signalType: SignalType;
-  entryPrice: string;
-  strategy: string;
-  status: BadgeStatus;
-}
-
-// ─── Mock Data — 20 rows ─────────────────────────────────────────────────────
-
-const MOCK_SIGNALS: SignalRow[] = [
-  { id: 1,  time: '09:16:04', symbol: 'RELIANCE',    signalType: 'BUY',  entryPrice: '2,847.50', strategy: '13/50 EMA',  status: 'entered'    },
-  { id: 2,  time: '09:18:21', symbol: 'TCS',         signalType: 'SELL', entryPrice: '4,123.75', strategy: 'Gap D/U',    status: 'target-hit' },
-  { id: 3,  time: '09:22:38', symbol: 'INFY',        signalType: 'BUY',  entryPrice: '1,892.30', strategy: 'ST+ADX',     status: 'pending'    },
-  { id: 4,  time: '09:31:15', symbol: 'HDFCBANK',    signalType: 'BUY',  entryPrice: '1,674.80', strategy: 'Pro Engine', status: 'entered'    },
-  { id: 5,  time: '09:45:02', symbol: 'ICICIBANK',   signalType: 'SELL', entryPrice: '1,248.60', strategy: '13/50 EMA',  status: 'sl-hit'     },
-  { id: 6,  time: '09:52:44', symbol: 'SBIN',        signalType: 'BUY',  entryPrice: '812.45',   strategy: 'Gap D/U',    status: 'target-hit' },
-  { id: 7,  time: '10:04:11', symbol: 'WIPRO',       signalType: 'SELL', entryPrice: '562.90',   strategy: 'ST+ADX',     status: 'pending'    },
-  { id: 8,  time: '10:17:33', symbol: 'BHARTIARTL',  signalType: 'BUY',  entryPrice: '1,736.25', strategy: 'Pro Engine', status: 'entered'    },
-  { id: 9,  time: '10:28:57', symbol: 'TATAMOTORS',  signalType: 'BUY',  entryPrice: '989.15',   strategy: '13/50 EMA',  status: 'target-hit' },
-  { id: 10, time: '10:41:22', symbol: 'AXISBANK',    signalType: 'SELL', entryPrice: '1,182.70', strategy: 'Gap D/U',    status: 'pending'    },
-  { id: 11, time: '10:55:08', symbol: 'LTIM',        signalType: 'BUY',  entryPrice: '5,610.00', strategy: 'ST+ADX',     status: 'entered'    },
-  { id: 12, time: '11:03:47', symbol: 'NESTLEIND',   signalType: 'SELL', entryPrice: '2,294.50', strategy: 'Pro Engine', status: 'cancelled'  },
-  { id: 13, time: '11:18:31', symbol: 'BAJFINANCE',  signalType: 'BUY',  entryPrice: '6,918.75', strategy: '13/50 EMA',  status: 'entered'    },
-  { id: 14, time: '11:34:59', symbol: 'MARUTI',      signalType: 'BUY',  entryPrice: '12,345.00','strategy': 'Gap D/U',  status: 'target-hit' },
-  { id: 15, time: '11:47:22', symbol: 'TITAN',       signalType: 'SELL', entryPrice: '3,467.80', strategy: 'ST+ADX',     status: 'sl-hit'     },
-  { id: 16, time: '12:02:14', symbol: 'ASIANPAINT',  signalType: 'BUY',  entryPrice: '2,831.40', strategy: 'Pro Engine', status: 'pending'    },
-  { id: 17, time: '12:19:06', symbol: 'ULTRACEMCO',  signalType: 'SELL', entryPrice: '11,720.50','strategy': '13/50 EMA',status: 'entered'    },
-  { id: 18, time: '12:38:43', symbol: 'POWERGRID',   signalType: 'BUY',  entryPrice: '318.60',   strategy: 'Gap D/U',    status: 'target-hit' },
-  { id: 19, time: '12:55:19', symbol: 'NTPC',        signalType: 'BUY',  entryPrice: '364.25',   strategy: 'ST+ADX',     status: 'pending'    },
-  { id: 20, time: '13:07:52', symbol: 'COALINDIA',   signalType: 'SELL', entryPrice: '456.90',   strategy: 'Pro Engine', status: 'cancelled'  },
-];
-
-// ─── Select options ───────────────────────────────────────────────────────────
-
-const STRATEGY_OPTIONS = [
-  { value: '',            label: 'All Strategies' },
-  { value: '13/50 EMA',   label: '13/50 EMA'      },
-  { value: 'Gap D/U',     label: 'Gap D/U'         },
-  { value: 'ST+ADX',      label: 'ST+ADX'          },
-  { value: 'Pro Engine',  label: 'Pro Engine'      },
-];
+// ─── Select options (static) ─────────────────────────────────────────────────
 
 const SIGNAL_TYPE_OPTIONS = [
   { value: '',     label: 'All Types' },
@@ -72,50 +25,95 @@ const SIGNAL_TYPE_OPTIONS = [
   { value: 'SELL', label: 'SELL'      },
 ];
 
-// ─── Stats strip data ─────────────────────────────────────────────────────────
-
-const STATS = [
-  { label: 'Total',  value: '1,247' },
-  { label: 'Today',  value: '23'    },
-  { label: 'Buy',    value: '14'    },
-  { label: 'Sell',   value: '9'     },
-];
+const PAGE_SIZE = 20;
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function SignalsPage() {
-  const [fromDate, setFromDate]   = useState('');
-  const [toDate, setToDate]       = useState('');
-  const [strategy, setStrategy]   = useState('');
-  const [signalType, setSignalType] = useState('');
+  const [fromDate, setFromDate]       = useState('');
+  const [toDate, setToDate]           = useState('');
+  const [strategy, setStrategy]       = useState('');
+  const [signalType, setSignalType]   = useState('');
   const [symbolSearch, setSymbolSearch] = useState('');
-  const [signals, setSignals]     = useState<SignalResponse[]>([]);
-  const [total, setTotal]         = useState(0);
-  const [loading, setLoading]     = useState(true);
-  const [page, setPage]           = useState(1);
+
+  const [signals, setSignals]         = useState<SignalResponse[]>([]);
+  const [total, setTotal]             = useState(0);
+  const [loading, setLoading]         = useState(true);
+  const [page, setPage]               = useState(1);
+
+  // Strategies for dropdown and name lookup
+  const [strategies, setStrategies]   = useState<StrategyResponse[]>([]);
+  const [strategyMap, setStrategyMap] = useState<Record<string, string>>({});
+
+  // Load strategies once on mount
+  useEffect(() => {
+    getStrategies()
+      .then((list) => {
+        setStrategies(list);
+        const map: Record<string, string> = {};
+        list.forEach((s) => { map[s.id] = s.name; });
+        setStrategyMap(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const strategyOptions = [
+    { value: '', label: 'All Strategies' },
+    ...strategies.map((s) => ({ value: s.id, label: s.name })),
+  ];
+
+  // Derived stats from current page + totals
+  const buyCount  = signals.filter((s) => s.signal_type === 'BUY').length;
+  const sellCount = signals.filter((s) => s.signal_type === 'SELL').length;
 
   const fetchSignals = useCallback(async (pg = 1) => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { page: String(pg), page_size: '20' };
-      if (symbolSearch) params.symbol = symbolSearch;
+      const params: Record<string, string> = {
+        page:      String(pg),
+        page_size: String(PAGE_SIZE),
+      };
+      if (symbolSearch) params.symbol      = symbolSearch;
       if (signalType)   params.signal_type = signalType;
-      if (fromDate)     params.date_from = fromDate;
-      if (toDate)       params.date_to = toDate;
+      if (strategy)     params.strategy_id = strategy;
+      if (fromDate)     params.date_from   = fromDate;
+      if (toDate)       params.date_to     = toDate;
+
       const data = await getSignals(params);
       setSignals(data.items);
       setTotal(data.total);
       setPage(pg);
-    } catch { /* keep existing */ }
-    finally { setLoading(false); }
-  }, [symbolSearch, signalType, fromDate, toDate]);
+    } catch {
+      /* keep existing rows on error */
+    } finally {
+      setLoading(false);
+    }
+  }, [symbolSearch, signalType, strategy, fromDate, toDate]);
 
-  useEffect(() => { fetchSignals(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Initial load
+  useEffect(() => {
+    fetchSignals(1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const totalPages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const startRow    = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endRow      = Math.min(page * PAGE_SIZE, total);
+
+  // Build visible page pills (max 5)
+  const pagePills = (() => {
+    const pills: number[] = [];
+    const half = 2;
+    let start = Math.max(1, page - half);
+    let end   = Math.min(totalPages, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pills.push(i);
+    return pills;
+  })();
 
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* ── Page Header ────────────────────────────────────────────────────── */}
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-500/10 border border-gold-500/20">
@@ -137,7 +135,7 @@ export default function SignalsPage() {
         </div>
       </div>
 
-      {/* ── Filter Bar ─────────────────────────────────────────────────────── */}
+      {/* ── Filter Bar ───────────────────────────────────────────────────────── */}
       <Card className="p-4">
         <div className="flex flex-wrap gap-3 items-end">
 
@@ -159,10 +157,10 @@ export default function SignalsPage() {
             />
           </div>
 
-          {/* Strategy dropdown */}
+          {/* Strategy dropdown (loaded from API) */}
           <Select
             label="Strategy"
-            options={STRATEGY_OPTIONS}
+            options={strategyOptions}
             value={strategy}
             onChange={(e) => setStrategy(e.target.value)}
             wrapperClassName="min-w-[150px]"
@@ -189,7 +187,9 @@ export default function SignalsPage() {
 
           {/* Action buttons */}
           <div className="flex gap-2 pb-0.5">
-            <Button variant="primary" size="sm" onClick={() => fetchSignals(1)}>Apply Filters</Button>
+            <Button variant="primary" size="sm" onClick={() => fetchSignals(1)}>
+              Apply Filters
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -209,9 +209,14 @@ export default function SignalsPage() {
         </div>
       </Card>
 
-      {/* ── Stats Strip ────────────────────────────────────────────────────── */}
+      {/* ── Stats Strip (live from API) ───────────────────────────────────────── */}
       <div className="flex flex-wrap gap-3">
-        {STATS.map(({ label, value }) => (
+        {[
+          { label: 'Total',  value: loading ? '…' : String(total)     },
+          { label: 'Page',   value: loading ? '…' : `${startRow}–${endRow}` },
+          { label: 'Buy',    value: loading ? '…' : String(buyCount)  },
+          { label: 'Sell',   value: loading ? '…' : String(sellCount) },
+        ].map(({ label, value }) => (
           <div
             key={label}
             className="flex items-center gap-2.5 rounded-lg border border-[#1e2d5a] bg-navy-800 px-4 py-2"
@@ -222,14 +227,18 @@ export default function SignalsPage() {
         ))}
       </div>
 
-      {/* ── Signals Table ──────────────────────────────────────────────────── */}
+      {/* ── Signals Table ────────────────────────────────────────────────────── */}
       <Card className="p-0 overflow-hidden">
 
         {/* Table header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1e2d5a]">
           <Zap className="h-4 w-4 text-gold-500" />
           <h2 className="text-sm font-semibold text-white">Signals</h2>
-          <span className="ml-auto text-xs text-[#4a5a8a]">Showing 1–20 of 1,247</span>
+          {!loading && (
+            <span className="ml-auto text-xs text-[#4a5a8a]">
+              Showing {startRow}–{endRow} of {total}
+            </span>
+          )}
         </div>
 
         {/* Scrollable wrapper for mobile */}
@@ -252,12 +261,18 @@ export default function SignalsPage() {
                 [...Array(8)].map((_, i) => (
                   <tr key={i} className="border-b border-[#1e2d5a]/50">
                     {[...Array(8)].map((__, j) => (
-                      <td key={j} className="px-4 py-3"><div className="h-4 rounded bg-navy-700 animate-pulse" /></td>
+                      <td key={j} className="px-4 py-3">
+                        <div className="h-4 rounded bg-navy-700 animate-pulse" />
+                      </td>
                     ))}
                   </tr>
                 ))
               ) : signals.length === 0 ? (
-                <tr><td colSpan={8} className="py-12 text-center text-muted text-sm">No signals found</td></tr>
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-muted text-sm">
+                    No signals found
+                  </td>
+                </tr>
               ) : (
                 signals.map((row, idx) => (
                   <tr
@@ -268,27 +283,57 @@ export default function SignalsPage() {
                       idx < 2 && 'animate-pulse-gold',
                     )}
                   >
-                    <td className="px-4 py-3 text-xs text-[#4a5a8a] font-mono">{idx + 1}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                      {new Date(row.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    <td className="px-4 py-3 text-xs text-[#4a5a8a] font-mono">
+                      {startRow + idx}
                     </td>
-                    <td className="px-4 py-3"><span className="font-semibold text-white tracking-wide">{row.symbol}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                      {new Date(row.timestamp).toLocaleTimeString('en-IN', {
+                        hour:   '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-white tracking-wide">{row.symbol}</span>
+                    </td>
                     <td className="px-4 py-3">
                       {row.signal_type === 'BUY' ? (
-                        <span className="inline-flex items-center gap-1 text-green-400 font-semibold text-xs"><ArrowUpRight className="h-3.5 w-3.5" /> BUY</span>
+                        <span className="inline-flex items-center gap-1 text-green-400 font-semibold text-xs">
+                          <ArrowUpRight className="h-3.5 w-3.5" /> BUY
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-red-400 font-semibold text-xs"><ArrowDownRight className="h-3.5 w-3.5" /> SELL</span>
+                        <span className="inline-flex items-center gap-1 text-red-400 font-semibold text-xs">
+                          <ArrowDownRight className="h-3.5 w-3.5" /> SELL
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 font-mono text-sm text-slate-200">
-                      {row.entry_price ? `₹${row.entry_price.toLocaleString('en-IN')}` : '—'}
+                      {row.entry_price != null
+                        ? `₹${row.entry_price.toLocaleString('en-IN')}`
+                        : '-'}
                     </td>
-                    <td className="px-4 py-3 text-xs text-[#4a5a8a]">{row.strategy_id ?? '—'}</td>
-                    <td className="px-4 py-3"><Badge status={row.status as BadgeStatus} /></td>
+                    <td className="px-4 py-3 text-xs text-[#4a5a8a]">
+                      {row.strategy_id
+                        ? (strategyMap[row.strategy_id] ?? row.strategy_id)
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge status={row.status as BadgeStatus} />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button aria-label="View signal" className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"><Eye className="h-3.5 w-3.5" /></button>
-                        <button aria-label="Edit signal" className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"><Edit2 className="h-3.5 w-3.5" /></button>
+                        <button
+                          aria-label="View signal"
+                          className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          aria-label="Edit signal"
+                          className="rounded p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-gold-400"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -300,41 +345,58 @@ export default function SignalsPage() {
 
       </Card>
 
-      {/* ── Pagination ─────────────────────────────────────────────────────── */}
+      {/* ── Pagination (dynamic) ─────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
         <p className="text-xs text-[#4a5a8a]">
-          Showing <span className="font-semibold text-slate-300">1–20</span> of{' '}
-          <span className="font-semibold text-slate-300">1,247</span> signals
+          Showing{' '}
+          <span className="font-semibold text-slate-300">{startRow}–{endRow}</span> of{' '}
+          <span className="font-semibold text-slate-300">{total}</span> signals
         </p>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" disabled>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page <= 1 || loading}
+            onClick={() => fetchSignals(page - 1)}
+          >
             <ChevronLeft className="h-4 w-4" />
             Prev
           </Button>
 
-          {/* Page pills */}
-          {[1, 2, 3].map((page) => (
+          {pagePills.map((p) => (
             <button
-              key={page}
+              key={p}
+              onClick={() => fetchSignals(p)}
               className={cn(
-                'h-7 min-w-[28px] rounded-md px-2 text-xs font-semibold transition-colors focus-gold focus-visible:outline-none',
-                page === 1
+                'h-7 min-w-[28px] rounded-md px-2 text-xs font-semibold transition-colors focus-visible:outline-none',
+                p === page
                   ? 'bg-gold-500 text-navy-950'
                   : 'bg-navy-800 text-[#4a5a8a] hover:bg-navy-700 hover:text-white border border-[#1e2d5a]',
               )}
             >
-              {page}
+              {p}
             </button>
           ))}
 
-          <span className="text-xs text-[#4a5a8a]">…</span>
+          {totalPages > 5 && page < totalPages - 2 && (
+            <>
+              <span className="text-xs text-[#4a5a8a]">…</span>
+              <button
+                onClick={() => fetchSignals(totalPages)}
+                className="h-7 min-w-[28px] rounded-md border border-[#1e2d5a] bg-navy-800 px-2 text-xs font-semibold text-[#4a5a8a] transition-colors hover:bg-navy-700 hover:text-white"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
 
-          <button className="h-7 min-w-[28px] rounded-md border border-[#1e2d5a] bg-navy-800 px-2 text-xs font-semibold text-[#4a5a8a] transition-colors hover:bg-navy-700 hover:text-white focus-gold focus-visible:outline-none">
-            63
-          </button>
-
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={page >= totalPages || loading}
+            onClick={() => fetchSignals(page + 1)}
+          >
             Next
             <ChevronRight className="h-4 w-4" />
           </Button>
