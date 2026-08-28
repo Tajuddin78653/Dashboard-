@@ -1,24 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Zap, TrendingUp, IndianRupee, Target } from 'lucide-react';
 import { StatCard, Skeleton } from '@/components/ui';
-import { getAnalyticsSummary, SummaryStats } from '@/lib/api';
+import { getAnalyticsSummary } from '@/lib/api';
+import type { SummaryStats } from '@/lib/api';
 
 const FALLBACK: SummaryStats = {
   total_signals: 0, open_trades: 0, today_pnl: 0, overall_win_rate: null,
 };
 
 export default function DashboardStats() {
-  const [stats, setStats] = useState<SummaryStats>(FALLBACK);
+  const [stats, setStats]     = useState<SummaryStats>(FALLBACK);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     getAnalyticsSummary()
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Initial fetch
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // Auto-refresh every 60 s
+  useEffect(() => {
+    const id = setInterval(fetchStats, 60_000);
+    return () => clearInterval(id);
+  }, [fetchStats]);
 
   if (loading) {
     return (
@@ -36,13 +46,11 @@ export default function DashboardStats() {
         label="Total Signals"
         value={stats.total_signals.toLocaleString('en-IN')}
         icon={Zap}
-        delta={undefined}
       />
       <StatCard
         label="Open Trades"
         value={stats.open_trades.toString()}
         icon={TrendingUp}
-        delta={undefined}
       />
       <StatCard
         label="Today P&L"
@@ -50,12 +58,12 @@ export default function DashboardStats() {
         icon={IndianRupee}
         delta={pnlPositive ? undefined : -1}
         deltaLabel={pnlPositive ? 'profit' : 'loss'}
+        className={pnlPositive ? '[&_p]:text-green-400' : '[&_p]:text-red-400'}
       />
       <StatCard
         label="Win Rate"
-        value={stats.overall_win_rate != null ? `${stats.overall_win_rate}%` : '—'}
+        value={stats.overall_win_rate != null ? `${stats.overall_win_rate.toFixed(1)}%` : '–'}
         icon={Target}
-        delta={undefined}
       />
     </div>
   );
