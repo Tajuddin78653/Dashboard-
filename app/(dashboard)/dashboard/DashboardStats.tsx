@@ -7,7 +7,7 @@ import { getAnalyticsSummary } from '@/lib/api';
 import type { SummaryStats } from '@/lib/api';
 
 const FALLBACK: SummaryStats = {
-  total_signals: 0, open_trades: 0, today_pnl: 0, overall_win_rate: null,
+  total_signals: 0, today_signals: 0, open_trades: 0, today_pnl: 0, overall_win_rate: null,
 };
 
 export default function DashboardStats() {
@@ -42,10 +42,12 @@ export default function DashboardStats() {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Today's signals — the number the user cares about most */}
       <StatCard
-        label="Total Signals"
-        value={stats.total_signals.toLocaleString('en-IN')}
+        label="Today's Signals"
+        value={stats.today_signals.toLocaleString('en-IN')}
         icon={Zap}
+        deltaLabel={`${stats.total_signals.toLocaleString('en-IN')} lifetime`}
       />
       <StatCard
         label="Open Trades"
@@ -57,7 +59,7 @@ export default function DashboardStats() {
         value={`₹${Math.abs(stats.today_pnl).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
         icon={IndianRupee}
         delta={pnlPositive ? undefined : -1}
-        deltaLabel={pnlPositive ? 'profit' : 'loss'}
+        deltaLabel={pnlPositive ? 'profit today' : 'loss today'}
         className={pnlPositive ? '[&_p]:text-green-400' : '[&_p]:text-red-400'}
       />
       <StatCard
