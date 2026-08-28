@@ -12,15 +12,17 @@ import {
 } from '@/lib/api';
 import type { MonthlyPnL, StrategyMetrics, SignalResponse } from '@/lib/api';
 import type { HistogramPoint, LinePoint } from '@/components/charts/LightweightChart';
+import type { Time } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
 
-// ─── Helper: convert monthly P&L to cumulative daily-ish equity curve ────────
+// ─── Helper: convert monthly P&L to cumulative equity curve ──────────────────
 function monthlyToCumulative(data: MonthlyPnL[]): LinePoint[] {
   let cumulative = 0;
+  const yr = new Date().getFullYear();
   return data.map((m) => {
     cumulative += m.net_pnl;
     const month = String(m.month).padStart(2, '0');
-    return { time: `${new Date().getFullYear()}-${month}-01` as `${number}-${number}-${number}`, value: cumulative };
+    return { time: `${yr}-${month}-01` as Time, value: cumulative };
   });
 }
 
@@ -43,7 +45,7 @@ export default function DashboardPage() {
         // Strategy histogram: use net_pnl per month (simple representation)
         setStratData(
           data.map((m) => ({
-            time: `${new Date().getFullYear()}-${String(m.month).padStart(2, '0')}-01` as `${number}-${number}-${number}`,
+            time: `${new Date().getFullYear()}-${String(m.month).padStart(2, '0')}-01` as Time,
             value: m.net_pnl,
           }))
         );
