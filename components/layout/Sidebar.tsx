@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  History,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard',           href: '/dashboard',  Icon: LayoutDashboard },
   { label: 'Live Signals',        href: '/signals',    Icon: Zap },
   { label: 'Open Positions',      href: '/positions',  Icon: TrendingUp },
+  { label: 'Trade History',       href: '/history',    Icon: History },
   { label: 'Strategy Analytics',  href: '/analytics',  Icon: BarChart2 },
   { label: 'Reports',             href: '/reports',    Icon: FileText },
   { label: 'Admin',               href: '/admin',      Icon: Settings },
