@@ -10,6 +10,7 @@ import {
   Edit2,
   ChevronLeft,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { Badge, Button, Card, Input, Select, Skeleton, EmptyState } from '@/components/ui';
 import type { BadgeStatus } from '@/components/ui';
@@ -27,9 +28,22 @@ const SIGNAL_TYPE_OPTIONS = [
 
 const PAGE_SIZE = 20;
 
+// ─── IST market hours helper ─────────────────────────────────────────────────
+// Returns true if current IST time is within NSE market hours Mon–Fri 09:15–15:30
+
+function isMarketOpen(): boolean {
+  const now  = new Date();
+  const ist  = new Date(now.getTime() + 5.5 * 60 * 60 * 1000); // UTC → IST
+  const day  = ist.getUTCDay();          // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return mins >= 9 * 60 + 15 && mins < 15 * 60 + 30;
+}
+
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function SignalsPage() {
+  const [marketOpen, setMarketOpen] = useState(false);
   const [fromDate, setFromDate]       = useState('');
   const [toDate, setToDate]           = useState('');
   const [strategy, setStrategy]       = useState('');
@@ -55,6 +69,13 @@ export default function SignalsPage() {
         setStrategyMap(map);
       })
       .catch(() => {});
+  }, []);
+
+  // Market-hours indicator: check every minute
+  useEffect(() => {
+    setMarketOpen(isMarketOpen());
+    const id = setInterval(() => setMarketOpen(isMarketOpen()), 60_000);
+    return () => clearInterval(id);
   }, []);
 
   const strategyOptions = [
@@ -125,14 +146,21 @@ export default function SignalsPage() {
           </div>
         </div>
 
-        {/* LIVE indicator */}
-        <div className="flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-          </span>
-          <span className="text-xs font-semibold tracking-widest text-green-400">LIVE</span>
-        </div>
+        {/* Market hours indicator — IST-aware */}
+        {marketOpen ? (
+          <div className="flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+            <span className="text-xs font-semibold tracking-widest text-green-400">MARKET OPEN</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-full border border-[#4a5a8a]/40 bg-navy-800 px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5 text-[#4a5a8a]" />
+            <span className="text-xs font-semibold tracking-widest text-[#4a5a8a]">MARKET CLOSED</span>
+          </div>
+        )}
       </div>
 
       {/* ── Filter Bar ───────────────────────────────────────────────────────── */}
