@@ -1,6 +1,7 @@
 'use client';
 
-import { Menu, Search, Bell, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Menu, Search, Bell, ChevronDown, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/Avatar';
 import { Input } from '@/components/ui/Input';
@@ -11,7 +12,27 @@ interface TopBarProps {
   className?: string;
 }
 
+// ─── IST market-hours helper ─────────────────────────────────────────────────
+// NSE trading hours: Mon–Fri 09:15–15:30 IST (UTC+5:30)
+function isMarketOpen(): boolean {
+  const now  = new Date();
+  const ist  = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const day  = ist.getUTCDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return mins >= 9 * 60 + 15 && mins < 15 * 60 + 30;
+}
+
 export function TopBar({ title, onMobileMenuClick, className }: TopBarProps) {
+  const [marketOpen, setMarketOpen] = useState(false);
+
+  // Check on mount and every minute
+  useEffect(() => {
+    setMarketOpen(isMarketOpen());
+    const id = setInterval(() => setMarketOpen(isMarketOpen()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <header
       className={cn(
@@ -42,18 +63,28 @@ export function TopBar({ title, onMobileMenuClick, className }: TopBarProps) {
         />
       </div>
 
-      {/* ── Right: Live indicator + Bell + Avatar ── */}
+      {/* ── Right: Market indicator + Bell + Avatar ── */}
       <div className="flex items-center gap-3 ml-auto flex-shrink-0">
-        {/* Live indicator */}
-        <div className="hidden sm:flex items-center gap-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-          </span>
-          <span className="text-[11px] font-semibold tracking-wider text-success uppercase">
-            Market Live
-          </span>
-        </div>
+
+        {/* ── IST-aware market status ── */}
+        {marketOpen ? (
+          <div className="hidden sm:flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+            </span>
+            <span className="text-[11px] font-semibold tracking-wider text-green-400 uppercase">
+              Market Open
+            </span>
+          </div>
+        ) : (
+          <div className="hidden sm:flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-[#4a5a8a]" />
+            <span className="text-[11px] font-semibold tracking-wider text-[#4a5a8a] uppercase">
+              Market Closed
+            </span>
+          </div>
+        )}
 
         {/* Notification Bell */}
         <button
