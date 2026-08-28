@@ -19,6 +19,7 @@ function getPageTitle(pathname: string): string {
     dashboard: 'Dashboard',
     signals:   'Live Signals',
     positions: 'Open Positions',
+    history:   'Trade History',
     analytics: 'Strategy Analytics',
     reports:   'Reports',
     admin:     'Admin Console',
