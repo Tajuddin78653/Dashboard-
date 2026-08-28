@@ -10,6 +10,7 @@ import { EquityCurveChart } from './EquityCurveChart';
 import { getMonthlyPnL, getEquityCurve, getStrategyMetrics } from '@/lib/api';
 import type { StrategyMetrics } from '@/lib/api';
 import type { HistogramPoint, LinePoint } from '@/components/charts/LightweightChart';
+import type { Time } from 'lightweight-charts';
 import { CHART_COLORS } from '@/lib/design-tokens';
 
 export default function AnalyticsPage() {
@@ -29,14 +30,14 @@ export default function AnalyticsPage() {
       .then(([monthly, equity, strats]) => {
         setMonthlyData(
           monthly.map((m) => ({
-            time: `${year}-${String(m.month).padStart(2, '0')}-01` as `${number}-${number}-${number}`,
+            time: `${year}-${String(m.month).padStart(2, '0')}-01` as Time,
             value: m.net_pnl,
             color: m.net_pnl >= 0 ? CHART_COLORS.profit : CHART_COLORS.loss,
           }))
         );
         setEquityData(
           equity.map((e) => ({
-            time: e.date as `${number}-${number}-${number}`,
+            time: e.date as Time,
             value: e.cumulative_pnl,
           }))
         );
