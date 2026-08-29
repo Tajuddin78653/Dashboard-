@@ -60,6 +60,11 @@ function getToken(): string | null {
   return localStorage.getItem('tradedash_token');
 }
 
+// Generic GET helper — used by pages that need direct API access (e.g. Admin page)
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return apiFetch<T>(path, options);
+}
+
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: HeadersInit = {
