@@ -167,6 +167,9 @@ export async function getUsers() {
 export async function createUser(body: { email: string; password: string; name: string; role: string }) {
   return apiFetch<UserResponse>('/users', { method: 'POST', body: JSON.stringify(body) });
 }
+export async function updateUser(id: string, body: { name?: string; role?: string; is_active?: boolean }) {
+  return apiFetch<UserResponse>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+}
 export async function deleteUser(id: string) {
   return apiFetch<void>(`/users/${id}`, { method: 'DELETE' });
 }

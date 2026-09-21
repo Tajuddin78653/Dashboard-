@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Users, BarChart2, Link, MessageCircle, ClipboardList,
   UserPlus, Eye, EyeOff, Clipboard, Save, Send,
-  Edit2, Trash2, CheckCircle, ShieldCheck, Landmark,
+  Edit2, Trash2, CheckCircle, ShieldCheck, Landmark, X, Loader2,
 } from 'lucide-react';
 import { Card, Button, Input, Select, Badge, Switch } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { apiRequest } from '@/lib/api';
-import type { AdminConfig } from '@/lib/api';
+import { apiRequest, getUsers, createUser, updateUser, deleteUser } from '@/lib/api';
+import type { AdminConfig, UserResponse } from '@/lib/api';
 
 type Section = 'users' | 'strategies' | 'webhook' | 'broker' | 'telegram' | 'audit';
 
@@ -20,12 +20,6 @@ const SECTIONS: { id: Section; label: string; icon: React.ComponentType<{ classN
   { id: 'broker',     label: 'Broker',      icon: Landmark },
   { id: 'telegram',   label: 'Telegram',    icon: MessageCircle },
   { id: 'audit',      label: 'Audit Logs',  icon: ClipboardList },
-];
-
-const MOCK_USERS = [
-  { name: 'Tajuddin', email: 'admin@tradedash.com', role: 'Admin', status: 'Active', lastLogin: '2 mins ago' },
-  { name: 'Ahmed Trader', email: 'ahmed@trade.com', role: 'Trader', status: 'Active', lastLogin: '1 hr ago' },
-  { name: 'Viewer User', email: 'viewer@trade.com', role: 'Viewer', status: 'Inactive', lastLogin: '3 days ago' },
 ];
 
 const AUDIT_LOGS = [
@@ -48,6 +42,18 @@ const ACTION_COLORS: Record<string, string> = {
   Config: 'text-orange-400',
 };
 
+// ─── User modal types ────────────────────────────────────────────────────────
+type UserModalMode = 'add' | 'edit';
+interface UserModalState {
+  mode: UserModalMode;
+  user?: UserResponse;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  is_active: boolean;
+}
+
 export default function AdminPage() {
   const [activeSection, setActiveSection]   = useState<Section>('users');
   const [strategyEnabled, setStrategyEnabled] = useState({ ema: true, gap: true, stadx: true, pro: false });
@@ -60,6 +66,64 @@ export default function AdminPage() {
   });
   const [config, setConfig]     = useState<AdminConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
+
+  // ── Users state ────────────────────────────────────────────────────────────
+  const [users, setUsers]           = useState<UserResponse[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userModal, setUserModal]   = useState<UserModalState | null>(null);
+  const [userSaving, setUserSaving] = useState(false);
+  const [userError, setUserError]   = useState<string | null>(null);
+
+  // Fetch users when entering Users tab
+  useEffect(() => {
+    if (activeSection === 'users') {
+      setUsersLoading(true);
+      getUsers()
+        .then(setUsers)
+        .catch(() => setUsers([]))
+        .finally(() => setUsersLoading(false));
+    }
+  }, [activeSection]);
+
+  function openAddModal() {
+    setUserError(null);
+    setUserModal({ mode: 'add', name: '', email: '', password: '', role: 'viewer', is_active: true });
+  }
+  function openEditModal(u: UserResponse) {
+    setUserError(null);
+    setUserModal({ mode: 'edit', user: u, name: u.name, email: u.email, password: '', role: u.role, is_active: u.is_active });
+  }
+  function closeModal() { setUserModal(null); setUserError(null); }
+
+  async function handleSaveUser() {
+    if (!userModal) return;
+    setUserSaving(true);
+    setUserError(null);
+    try {
+      if (userModal.mode === 'add') {
+        const created = await createUser({ email: userModal.email, password: userModal.password, name: userModal.name, role: userModal.role });
+        setUsers(prev => [...prev, created]);
+      } else if (userModal.user) {
+        const updated = await updateUser(userModal.user.id, { name: userModal.name, role: userModal.role, is_active: userModal.is_active });
+        setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+      }
+      closeModal();
+    } catch (e) {
+      setUserError(e instanceof Error ? e.message : 'Failed to save user');
+    } finally {
+      setUserSaving(false);
+    }
+  }
+
+  async function handleDeleteUser(u: UserResponse) {
+    if (!confirm(`Delete user ${u.name}? This cannot be undone.`)) return;
+    try {
+      await deleteUser(u.id);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to delete user');
+    }
+  }
 
   // Fetch real config from API when entering webhook or broker tab
   useEffect(() => {
@@ -127,54 +191,135 @@ export default function AdminPage() {
                 <h2 className="font-semibold text-white flex items-center gap-2">
                   <Users className="w-4 h-4 text-gold-400" /> Users
                 </h2>
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" onClick={openAddModal}>
                   <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add User
                 </Button>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border)]">
-                      {['Name', 'Email', 'Role', 'Status', 'Last Login', 'Actions'].map(col => (
-                        <th key={col} className="text-left py-2 px-3 text-xs text-muted font-medium uppercase tracking-wide">{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_USERS.map((user, i) => (
-                      <tr key={i} className="border-b border-[var(--color-border)]/50 hover:bg-navy-700/30 transition-colors">
-                        <td className="py-3 px-3 font-semibold text-white">{user.name}</td>
-                        <td className="py-3 px-3 text-muted text-xs">{user.email}</td>
-                        <td className="py-3 px-3">
-                          <span className={cn(
-                            'px-2 py-0.5 rounded-full text-xs font-semibold',
-                            user.role === 'Admin'  ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20' :
-                            user.role === 'Trader' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                            'bg-navy-600 text-muted border border-[var(--color-border)]',
-                          )}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold',
-                            user.status === 'Active' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger',
-                          )}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-muted text-xs">{user.lastLogin}</td>
-                        <td className="py-3 px-3">
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm"><Edit2 className="w-3.5 h-3.5" /></Button>
-                            <Button variant="danger" size="sm"><Trash2 className="w-3.5 h-3.5" /></Button>
-                          </div>
-                        </td>
+
+              {usersLoading ? (
+                <div className="flex items-center justify-center py-10 text-muted text-sm gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading users...
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--color-border)]">
+                        {['Name', 'Email', 'Role', 'Status', 'Actions'].map(col => (
+                          <th key={col} className="text-left py-2 px-3 text-xs text-muted font-medium uppercase tracking-wide">{col}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {users.length === 0 ? (
+                        <tr><td colSpan={5} className="py-8 text-center text-sm text-muted">No users found</td></tr>
+                      ) : users.map((u) => (
+                        <tr key={u.id} className="border-b border-[var(--color-border)]/50 hover:bg-navy-700/30 transition-colors">
+                          <td className="py-3 px-3 font-semibold text-white">{u.name}</td>
+                          <td className="py-3 px-3 text-muted text-xs">{u.email}</td>
+                          <td className="py-3 px-3">
+                            <span className={cn(
+                              'px-2 py-0.5 rounded-full text-xs font-semibold capitalize',
+                              u.role === 'admin'  ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20' :
+                              u.role === 'trader' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                              'bg-navy-600 text-muted border border-[var(--color-border)]',
+                            )}>{u.role}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={cn('px-2 py-0.5 rounded-full text-xs font-semibold',
+                              u.is_active ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger',
+                            )}>
+                              {u.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => openEditModal(u)}>
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => handleDeleteUser(u)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
+          )}
+
+          {/* USER MODAL */}
+          {userModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm">
+              <div className="w-full max-w-md bg-navy-900 border border-[#1e2d5a] rounded-xl shadow-2xl overflow-hidden">
+                {/* Modal header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e2d5a]">
+                  <h3 className="font-semibold text-white text-sm">
+                    {userModal.mode === 'add' ? 'Add New User' : `Edit — ${userModal.user?.name}`}
+                  </h3>
+                  <button onClick={closeModal} className="text-muted hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* Modal body */}
+                <div className="px-5 py-4 space-y-3">
+                  <Input
+                    label="Full Name"
+                    value={userModal.name}
+                    onChange={e => setUserModal(m => m ? { ...m, name: e.target.value } : m)}
+                    placeholder="Tajuddin"
+                  />
+                  {userModal.mode === 'add' && (
+                    <>
+                      <Input
+                        label="Email"
+                        type="email"
+                        value={userModal.email}
+                        onChange={e => setUserModal(m => m ? { ...m, email: e.target.value } : m)}
+                        placeholder="user@tradedash.com"
+                      />
+                      <Input
+                        label="Password"
+                        type="password"
+                        value={userModal.password}
+                        onChange={e => setUserModal(m => m ? { ...m, password: e.target.value } : m)}
+                        placeholder="••••••••"
+                      />
+                    </>
+                  )}
+                  <Select
+                    label="Role"
+                    value={userModal.role}
+                    onChange={e => setUserModal(m => m ? { ...m, role: e.target.value } : m)}
+                    options={[
+                      { value: 'admin',  label: 'Admin' },
+                      { value: 'trader', label: 'Trader' },
+                      { value: 'viewer', label: 'Viewer' },
+                    ]}
+                  />
+                  {userModal.mode === 'edit' && (
+                    <Switch
+                      label="Active"
+                      checked={userModal.is_active}
+                      onChange={v => setUserModal(m => m ? { ...m, is_active: v } : m)}
+                    />
+                  )}
+                  {userError && (
+                    <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{userError}</p>
+                  )}
+                </div>
+                {/* Modal footer */}
+                <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#1e2d5a]">
+                  <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
+                  <Button variant="primary" size="sm" onClick={handleSaveUser} disabled={userSaving}>
+                    {userSaving ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><CheckCircle className="w-3.5 h-3.5 mr-1.5" />Save</>}
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* STRATEGIES */}

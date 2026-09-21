@@ -17,28 +17,43 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/Avatar';
+import { getUser, removeToken } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',           href: '/dashboard',  Icon: LayoutDashboard },
-  { label: 'Live Signals',        href: '/signals',    Icon: Zap },
-  { label: 'Open Positions',      href: '/positions',  Icon: TrendingUp },
-  { label: 'Trade History',       href: '/history',    Icon: History },
-  { label: 'Strategy Analytics',  href: '/analytics',  Icon: BarChart2 },
-  { label: 'Reports',             href: '/reports',    Icon: FileText },
-  { label: 'Admin',               href: '/admin',      Icon: Settings },
+  { label: 'Dashboard',           href: '/dashboard',  Icon: LayoutDashboard, roles: ['admin','trader','viewer'] },
+  { label: 'Live Signals',        href: '/signals',    Icon: Zap,             roles: ['admin','trader','viewer'] },
+  { label: 'Open Positions',      href: '/positions',  Icon: TrendingUp,      roles: ['admin','trader','viewer'] },
+  { label: 'Trade History',       href: '/history',    Icon: History,         roles: ['admin','trader','viewer'] },
+  { label: 'Strategy Analytics',  href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
+  { label: 'Reports',             href: '/reports',    Icon: FileText,        roles: ['admin','trader','viewer'] },
+  { label: 'Admin',               href: '/admin',      Icon: Settings,        roles: ['admin'] },
 ];
 
 interface SidebarProps {
-  /** Force-collapsed from outside (e.g. mobile overlay parent hides it entirely) */
   forceCollapsed?: boolean;
   className?: string;
 }
 
 export function Sidebar({ forceCollapsed, className }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname   = usePathname();
+  const router     = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
   const isCollapsed = forceCollapsed ?? collapsed;
+
+  // Read logged-in user role from JWT
+  const user     = getUser();
+  const userName = user?.name ?? 'User';
+  const userRole = user?.role ?? 'viewer';
+
+  // Only show nav items allowed for this role
+  const visibleItems = NAV_ITEMS.filter(item => item.roles.includes(userRole));
+
+  function handleLogout() {
+    removeToken();
+    router.replace('/login');
+  }
 
   return (
     <aside
@@ -70,7 +85,7 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
       {/* ── Nav Items ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         <ul className="flex flex-col gap-0.5 px-2">
-          {NAV_ITEMS.map(({ label, href, Icon }) => {
+          {visibleItems.map(({ label, href, Icon }) => {
             const isActive = pathname === href || pathname.startsWith(href + '/');
             return (
               <li key={href}>
@@ -86,7 +101,6 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
                       : 'text-[#7a8db3] hover:bg-navy-700 hover:text-slate-100',
                   )}
                 >
-                  {/* Gold left-border accent for active item */}
                   {isActive && (
                     <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-gold-500" />
                   )}
@@ -118,10 +132,7 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
           >
             {isCollapsed
               ? <ChevronRight className="h-4 w-4 flex-shrink-0" />
-              : <>
-                  <ChevronLeft className="h-4 w-4 flex-shrink-0" />
-                  <span>Collapse</span>
-                </>
+              : <><ChevronLeft className="h-4 w-4 flex-shrink-0" /><span>Collapse</span></>
             }
           </button>
         </div>
@@ -132,15 +143,16 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
         'border-t border-[#1e2d5a] p-3 flex-shrink-0',
         isCollapsed ? 'flex flex-col items-center gap-2' : 'flex items-center gap-3',
       )}>
-        <Avatar name="Tajuddin" size="sm" className="flex-shrink-0" />
+        <Avatar name={userName} size="sm" className="flex-shrink-0" />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">Tajuddin</p>
-            <p className="text-xs text-[#4a5a8a] truncate">Admin</p>
+            <p className="text-sm font-medium text-slate-200 truncate">{userName}</p>
+            <p className="text-xs text-[#4a5a8a] truncate capitalize">{userRole}</p>
           </div>
         )}
         <button
           title="Logout"
+          onClick={handleLogout}
           className="flex-shrink-0 rounded-md p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-danger transition-colors duration-150"
         >
           <LogOut className="h-4 w-4" />
