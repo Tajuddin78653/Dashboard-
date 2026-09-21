@@ -4,6 +4,17 @@ All notable changes are documented here. Each version is tagged in Git for insta
 
 ---
 
+## [v1.2-dhan] — 2025
+### Fixed (Bugs found post v1.1-dhan)
+- **JWT fields** — JWT token now correctly contains `name`, `email`, `role` — previously only had `sub` + `exp`, causing sidebar to always show "User / Viewer"
+- **Admin tab visibility** — After JWT fix, Admin tab now correctly hidden from trader/viewer, visible to admin only
+- **Trade History** — Missing from sidebar nav restored (was present in NAV_ITEMS but not rendering due to role filter returning empty for viewer default)
+- **Add User modal** — Modal moved to page root level (`z-[100]`) — was clipped inside card layout, buttons not clickable
+- **Edit User modal** — Same fix — modal now renders above all page content
+- **MobileNav** — Was hardcoded to show Admin tab for all roles; now role-aware (admin sees Admin tab, others see History)
+
+---
+
 ## [v1.1-dhan] — 2025
 ### Added
 - `📄 Paper` / `🟢 Dhan Live` trading mode badge in TopBar — visible on all pages

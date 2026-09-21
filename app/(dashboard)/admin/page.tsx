@@ -251,77 +251,6 @@ export default function AdminPage() {
             </Card>
           )}
 
-          {/* USER MODAL */}
-          {userModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm">
-              <div className="w-full max-w-md bg-navy-900 border border-[#1e2d5a] rounded-xl shadow-2xl overflow-hidden">
-                {/* Modal header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e2d5a]">
-                  <h3 className="font-semibold text-white text-sm">
-                    {userModal.mode === 'add' ? 'Add New User' : `Edit — ${userModal.user?.name}`}
-                  </h3>
-                  <button onClick={closeModal} className="text-muted hover:text-white transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                {/* Modal body */}
-                <div className="px-5 py-4 space-y-3">
-                  <Input
-                    label="Full Name"
-                    value={userModal.name}
-                    onChange={e => setUserModal(m => m ? { ...m, name: e.target.value } : m)}
-                    placeholder="Tajuddin"
-                  />
-                  {userModal.mode === 'add' && (
-                    <>
-                      <Input
-                        label="Email"
-                        type="email"
-                        value={userModal.email}
-                        onChange={e => setUserModal(m => m ? { ...m, email: e.target.value } : m)}
-                        placeholder="user@tradedash.com"
-                      />
-                      <Input
-                        label="Password"
-                        type="password"
-                        value={userModal.password}
-                        onChange={e => setUserModal(m => m ? { ...m, password: e.target.value } : m)}
-                        placeholder="••••••••"
-                      />
-                    </>
-                  )}
-                  <Select
-                    label="Role"
-                    value={userModal.role}
-                    onChange={e => setUserModal(m => m ? { ...m, role: e.target.value } : m)}
-                    options={[
-                      { value: 'admin',  label: 'Admin' },
-                      { value: 'trader', label: 'Trader' },
-                      { value: 'viewer', label: 'Viewer' },
-                    ]}
-                  />
-                  {userModal.mode === 'edit' && (
-                    <Switch
-                      label="Active"
-                      checked={userModal.is_active}
-                      onChange={v => setUserModal(m => m ? { ...m, is_active: v } : m)}
-                    />
-                  )}
-                  {userError && (
-                    <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{userError}</p>
-                  )}
-                </div>
-                {/* Modal footer */}
-                <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#1e2d5a]">
-                  <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
-                  <Button variant="primary" size="sm" onClick={handleSaveUser} disabled={userSaving}>
-                    {userSaving ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</> : <><CheckCircle className="w-3.5 h-3.5 mr-1.5" />Save</>}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* STRATEGIES */}
           {activeSection === 'strategies' && (
             <Card>
@@ -687,6 +616,78 @@ export default function AdminPage() {
 
         </div>
       </div>
+
+      {/* USER MODAL — rendered at page root to avoid clipping */}
+      {userModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-navy-900 border border-[#1e2d5a] rounded-xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e2d5a]">
+              <h3 className="font-semibold text-white text-sm">
+                {userModal.mode === 'add' ? 'Add New User' : `Edit — ${userModal.user?.name}`}
+              </h3>
+              <button onClick={closeModal} className="text-muted hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <Input
+                label="Full Name"
+                value={userModal.name}
+                onChange={e => setUserModal(m => m ? { ...m, name: e.target.value } : m)}
+                placeholder="Tajuddin"
+              />
+              {userModal.mode === 'add' && (
+                <>
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={userModal.email}
+                    onChange={e => setUserModal(m => m ? { ...m, email: e.target.value } : m)}
+                    placeholder="user@tradedash.com"
+                  />
+                  <Input
+                    label="Password"
+                    type="password"
+                    value={userModal.password}
+                    onChange={e => setUserModal(m => m ? { ...m, password: e.target.value } : m)}
+                    placeholder="••••••••"
+                  />
+                </>
+              )}
+              <Select
+                label="Role"
+                value={userModal.role}
+                onChange={e => setUserModal(m => m ? { ...m, role: e.target.value } : m)}
+                options={[
+                  { value: 'admin',  label: 'Admin' },
+                  { value: 'trader', label: 'Trader' },
+                  { value: 'viewer', label: 'Viewer' },
+                ]}
+              />
+              {userModal.mode === 'edit' && (
+                <Switch
+                  label="Active"
+                  checked={userModal.is_active}
+                  onChange={v => setUserModal(m => m ? { ...m, is_active: v } : m)}
+                />
+              )}
+              {userError && (
+                <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{userError}</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#1e2d5a]">
+              <Button variant="secondary" size="sm" onClick={closeModal}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleSaveUser} disabled={userSaving}>
+                {userSaving
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Saving…</>
+                  : <><CheckCircle className="w-3.5 h-3.5 mr-1.5" />Save</>
+                }
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

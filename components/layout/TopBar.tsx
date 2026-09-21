@@ -32,8 +32,8 @@ export function TopBar({ title, onMobileMenuClick, className }: TopBarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router      = useRouter();
 
-  // Read logged-in user from JWT
-  const user = getUser();
+  // Read logged-in user from JWT — token now contains name/email/role after API fix
+  const user = getUser() as any;
   const userName  = user?.name  ?? 'User';
   const userEmail = user?.email ?? '';
   const userRole  = user?.role  ?? '';

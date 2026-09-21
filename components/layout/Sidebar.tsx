@@ -21,13 +21,13 @@ import { getUser, removeToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',           href: '/dashboard',  Icon: LayoutDashboard, roles: ['admin','trader','viewer'] },
-  { label: 'Live Signals',        href: '/signals',    Icon: Zap,             roles: ['admin','trader','viewer'] },
-  { label: 'Open Positions',      href: '/positions',  Icon: TrendingUp,      roles: ['admin','trader','viewer'] },
-  { label: 'Trade History',       href: '/history',    Icon: History,         roles: ['admin','trader','viewer'] },
-  { label: 'Strategy Analytics',  href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
-  { label: 'Reports',             href: '/reports',    Icon: FileText,        roles: ['admin','trader','viewer'] },
-  { label: 'Admin',               href: '/admin',      Icon: Settings,        roles: ['admin'] },
+  { label: 'Dashboard',          href: '/dashboard',  Icon: LayoutDashboard, roles: ['admin','trader','viewer'] },
+  { label: 'Live Signals',       href: '/signals',    Icon: Zap,             roles: ['admin','trader','viewer'] },
+  { label: 'Open Positions',     href: '/positions',  Icon: TrendingUp,      roles: ['admin','trader','viewer'] },
+  { label: 'Trade History',      href: '/history',    Icon: History,         roles: ['admin','trader','viewer'] },
+  { label: 'Strategy Analytics', href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
+  { label: 'Reports',            href: '/reports',    Icon: FileText,        roles: ['admin','trader','viewer'] },
+  { label: 'Admin',              href: '/admin',      Icon: Settings,        roles: ['admin'] },
 ];
 
 interface SidebarProps {
@@ -42,10 +42,10 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
 
   const isCollapsed = forceCollapsed ?? collapsed;
 
-  // Read logged-in user role from JWT
+  // Read logged-in user from JWT — after API fix, token contains name/email/role
   const user     = getUser();
-  const userName = user?.name ?? 'User';
-  const userRole = user?.role ?? 'viewer';
+  const userName = (user as any)?.name ?? (user as any)?.sub ?? 'User';
+  const userRole = (user as any)?.role ?? 'viewer';
 
   // Only show nav items allowed for this role
   const visibleItems = NAV_ITEMS.filter(item => item.roles.includes(userRole));
