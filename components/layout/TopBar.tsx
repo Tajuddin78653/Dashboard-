@@ -5,6 +5,7 @@ import { Menu, Search, Bell, ChevronDown, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/Avatar';
 import { Input } from '@/components/ui/Input';
+import { useTradingMode } from '@/lib/trading-mode-context';
 
 interface TopBarProps {
   title: string;
@@ -25,6 +26,7 @@ function isMarketOpen(): boolean {
 
 export function TopBar({ title, onMobileMenuClick, className }: TopBarProps) {
   const [marketOpen, setMarketOpen] = useState(false);
+  const { paperTrading, loading: modeLoading } = useTradingMode();
 
   // Check on mount and every minute
   useEffect(() => {
@@ -63,8 +65,29 @@ export function TopBar({ title, onMobileMenuClick, className }: TopBarProps) {
         />
       </div>
 
-      {/* ── Right: Market indicator + Bell + Avatar ── */}
+      {/* ── Right: Trading mode + Market indicator + Bell + Avatar ── */}
       <div className="flex items-center gap-3 ml-auto flex-shrink-0">
+
+        {/* ── Trading mode badge ── */}
+        {!modeLoading && (
+          paperTrading ? (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10">
+              <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase">
+                📄 Paper
+              </span>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-green-500/30 bg-green-500/10">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+              </span>
+              <span className="text-[10px] font-bold tracking-wider text-green-400 uppercase">
+                Dhan Live
+              </span>
+            </div>
+          )
+        )}
 
         {/* ── IST-aware market status ── */}
         {marketOpen ? (

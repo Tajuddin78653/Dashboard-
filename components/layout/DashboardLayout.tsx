@@ -7,6 +7,7 @@ import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import { usePathname, useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
+import { TradingModeProvider } from '@/lib/trading-mode-context';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -62,6 +63,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const title = getPageTitle(pathname);
 
   return (
+    <TradingModeProvider>
     <div className="flex h-screen overflow-hidden bg-navy-950">
       {/* ── Desktop / Tablet Sidebar ── */}
       <div className="hidden md:flex flex-shrink-0 h-full">
@@ -113,6 +115,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ── Mobile Bottom Nav ── */}
       <MobileNav />
     </div>
+    </TradingModeProvider>
   );
 }
 

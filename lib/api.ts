@@ -15,6 +15,20 @@ export interface OpenPositionResponse {
   trade_id: string; symbol: string; signal_type: string; entry_price: number;
   current_price: number | null; mtm: number | null; pnl_pct: number | null;
   stop_loss: number; target_price: number; quantity: number; status: string; entry_time: string;
+  dhan_order_id: string | null;
+}
+export interface AdminConfig {
+  webhook_url_bot1: string;
+  webhook_url_bot2: string;
+  webhook_token_bot1: string | null;
+  webhook_token_bot2: string | null;
+  paper_trading: boolean;
+  capital_per_trade: number;
+  force_exit_time: string;
+  telegram_bot1_configured: boolean;
+  telegram_bot2_configured: boolean;
+  dhan_configured: boolean;
+  dhan_client_id_hint: string;
 }
 export interface TradeResponse {
   id: string; trade_id: string; symbol: string; signal_type: string;

@@ -3,19 +3,21 @@
 import { useState, useEffect } from 'react';
 import {
   Settings, Users, BarChart2, Link, MessageCircle, ClipboardList,
-  UserPlus, Eye, EyeOff, Clipboard, RefreshCw, Save, Send,
-  Edit2, Trash2, CheckCircle, ShieldCheck,
+  UserPlus, Eye, EyeOff, Clipboard, Save, Send,
+  Edit2, Trash2, CheckCircle, ShieldCheck, Landmark,
 } from 'lucide-react';
 import { Card, Button, Input, Select, Badge, Switch } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
+import type { AdminConfig } from '@/lib/api';
 
-type Section = 'users' | 'strategies' | 'webhook' | 'telegram' | 'audit';
+type Section = 'users' | 'strategies' | 'webhook' | 'broker' | 'telegram' | 'audit';
 
 const SECTIONS: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'users',      label: 'Users',       icon: Users },
   { id: 'strategies', label: 'Strategies',  icon: BarChart2 },
   { id: 'webhook',    label: 'Webhook',     icon: Link },
+  { id: 'broker',     label: 'Broker',      icon: Landmark },
   { id: 'telegram',   label: 'Telegram',    icon: MessageCircle },
   { id: 'audit',      label: 'Audit Logs',  icon: ClipboardList },
 ];
@@ -46,23 +48,12 @@ const ACTION_COLORS: Record<string, string> = {
   Config: 'text-orange-400',
 };
 
-interface AdminConfig {
-  webhook_url_bot1: string;
-  webhook_url_bot2: string;
-  webhook_token_bot1: string | null;
-  webhook_token_bot2: string | null;
-  paper_trading: boolean;
-  capital_per_trade: number;
-  force_exit_time: string;
-  telegram_bot1_configured: boolean;
-  telegram_bot2_configured: boolean;
-}
-
 export default function AdminPage() {
   const [activeSection, setActiveSection]   = useState<Section>('users');
   const [strategyEnabled, setStrategyEnabled] = useState({ ema: true, gap: true, stadx: true, pro: false });
   const [showToken1, setShowToken1]         = useState(false);
   const [showToken2, setShowToken2]         = useState(false);
+  const [showDhanToken, setShowDhanToken]   = useState(false);
   const [copiedBot, setCopiedBot]           = useState<1 | 2 | null>(null);
   const [telegramAlerts, setTelegramAlerts] = useState({
     newSignal: true, tradeEntry: true, targetHit: true, slHit: true, dailySummary: false,
@@ -70,9 +61,9 @@ export default function AdminPage() {
   const [config, setConfig]     = useState<AdminConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
 
-  // Fetch real config from API
+  // Fetch real config from API when entering webhook or broker tab
   useEffect(() => {
-    if (activeSection === 'webhook') {
+    if (activeSection === 'webhook' || activeSection === 'broker') {
       setConfigLoading(true);
       apiRequest<AdminConfig>('/admin/config')
         .then(data => setConfig(data))
@@ -340,6 +331,116 @@ export default function AdminPage() {
                       The token is unique per strategy — if leaked, contact admin to regenerate.
                     </p>
                   </div>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* BROKER */}
+          {activeSection === 'broker' && (
+            <Card>
+              <h2 className="font-semibold text-white flex items-center gap-2 mb-5">
+                <Landmark className="w-4 h-4 text-gold-400" /> Broker
+              </h2>
+
+              {configLoading && (
+                <div className="text-muted text-sm py-4 text-center">Loading broker config...</div>
+              )}
+
+              {!configLoading && (
+                <div className="space-y-5">
+
+                  {/* Trading Mode */}
+                  <div>
+                    <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Trading Mode</p>
+                    {config?.paper_trading !== false ? (
+                      <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-xl leading-none mt-0.5">📄</span>
+                        <div>
+                          <p className="text-sm font-semibold text-amber-400">Paper Trading</p>
+                          <p className="text-xs text-muted mt-1">
+                            Simulated trades only — no real orders placed on any exchange.
+                            Set <span className="font-mono text-amber-300">PAPER_TRADING=false</span> in
+                            environment variables and redeploy to go live.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <span className="relative flex h-3 w-3 mt-1 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-green-400">Dhan Live Trading</p>
+                          <p className="text-xs text-muted mt-1">
+                            Real orders are being placed on NSE via Dhan API.
+                            All signals trigger actual intraday market buy orders.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dhan Credentials */}
+                  <div>
+                    <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">Dhan Credentials</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Client ID */}
+                      <div>
+                        <label className="text-xs font-medium text-muted block mb-1">Client ID</label>
+                        <div className="flex items-center gap-2 bg-navy-800 border border-[var(--color-border)] rounded-lg px-3 py-2">
+                          <span className="flex-1 text-xs font-mono text-white">
+                            {config?.dhan_client_id_hint
+                              ? config.dhan_client_id_hint
+                              : <span className="text-muted italic">not set</span>
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      {/* Access Token */}
+                      <div>
+                        <label className="text-xs font-medium text-muted block mb-1">Access Token</label>
+                        <div className="flex items-center gap-2 bg-navy-800 border border-[var(--color-border)] rounded-lg px-3 py-2">
+                          <span className="flex-1 text-xs font-mono text-white">
+                            {config?.dhan_configured
+                              ? (showDhanToken ? '(set via env var — not exposed)' : '●●●●●●●●●●●●●●●●')
+                              : <span className="text-muted italic">not set</span>
+                            }
+                          </span>
+                          {config?.dhan_configured && (
+                            <button
+                              onClick={() => setShowDhanToken(v => !v)}
+                              className="text-muted hover:text-white transition-colors"
+                            >
+                              {showDhanToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Connection Status */}
+                  <div className={cn(
+                    'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-xs font-medium',
+                    config?.dhan_configured
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                      : 'bg-red-500/10 border-red-500/20 text-red-400',
+                  )}>
+                    <span>{config?.dhan_configured ? '✅' : '❌'}</span>
+                    {config?.dhan_configured
+                      ? 'Dhan credentials configured — ready for live trading'
+                      : 'Dhan credentials not set — add DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN to environment variables'
+                    }
+                  </div>
+
+                  {/* Info note */}
+                  <p className="text-xs text-muted">
+                    Credentials are read from server environment variables and never stored in the database.
+                    To update them, edit your Render / deployment environment and redeploy.
+                  </p>
+
                 </div>
               )}
             </Card>

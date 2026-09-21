@@ -16,6 +16,7 @@ import { Badge, Button, Card, StatCard } from '@/components/ui';
 import { getOpenTrades, exitTrade } from '@/lib/api';
 import type { OpenPositionResponse } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useTradingMode } from '@/lib/trading-mode-context';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,7 @@ export default function PositionsPage() {
   const [error, setError]           = useState<string | null>(null);
   const [exitingId, setExitingId]   = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const { paperTrading } = useTradingMode();
 
   const loadPositions = useCallback(async () => {
     setLoading(true);
@@ -99,11 +101,12 @@ export default function PositionsPage() {
   const bigLoser   = byMtm[byMtm.length - 1];
 
   // ── Skeleton rows ───────────────────────────────────────────────────────────
+  const colCount = paperTrading ? 10 : 11;
   const SkeletonRows = () => (
     <>
       {[...Array(3)].map((_, i) => (
         <tr key={i} className="border-b border-[#1e2d5a]/50">
-          {[...Array(10)].map((__, j) => (
+          {[...Array(colCount)].map((__, j) => (
             <td key={j} className="px-4 py-3">
               <div className="h-4 rounded bg-navy-700 animate-pulse" />
             </td>
@@ -221,7 +224,9 @@ export default function PositionsPage() {
               <thead>
                 <tr className="border-b border-[#1e2d5a] bg-navy-800/60">
                   {[
-                    'Trade ID', 'Symbol', 'Entry Price', 'CMP',
+                    'Trade ID',
+                    ...(!paperTrading ? ['Dhan Order'] : []),
+                    'Symbol', 'Entry Price', 'CMP',
                     'MTM', 'P&L %', 'Target', 'Stop Loss', 'Status', 'Actions',
                   ].map((col) => (
                     <th
@@ -239,7 +244,7 @@ export default function PositionsPage() {
                   <SkeletonRows />
                 ) : positions.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-16 text-center text-sm text-[#4a5a8a]">
+                    <td colSpan={colCount} className="py-16 text-center text-sm text-[#4a5a8a]">
                       No open positions at the moment
                     </td>
                   </tr>
@@ -257,6 +262,11 @@ export default function PositionsPage() {
                         )}
                       >
                         <td className="px-4 py-3 font-mono text-xs text-[#4a5a8a]">{pos.trade_id}</td>
+                        {!paperTrading && (
+                          <td className="px-4 py-3 font-mono text-xs text-[#4a5a8a]">
+                            {pos.dhan_order_id ?? '—'}
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <span className="font-semibold text-white tracking-wide">{pos.symbol}</span>
                         </td>
@@ -313,7 +323,7 @@ export default function PositionsPage() {
               {!loading && positions.length > 0 && (
                 <tfoot>
                   <tr className="border-t-2 border-[#1e2d5a] bg-navy-800/60">
-                    <td colSpan={4} className="px-4 py-3 text-xs font-semibold text-[#4a5a8a] uppercase tracking-wider">
+                    <td colSpan={paperTrading ? 4 : 5} className="px-4 py-3 text-xs font-semibold text-[#4a5a8a] uppercase tracking-wider">
                       Total Unrealised P&amp;L
                     </td>
                     <td
@@ -366,6 +376,11 @@ export default function PositionsPage() {
                   <div>
                     <p className="text-lg font-bold text-white tracking-wide">{pos.symbol}</p>
                     <p className="text-[10px] font-mono text-[#4a5a8a]">{pos.trade_id}</p>
+                    {!paperTrading && pos.dhan_order_id && (
+                      <p className="text-[10px] font-mono text-green-400/70 mt-0.5">
+                        Dhan: {pos.dhan_order_id}
+                      </p>
+                    )}
                   </div>
                   <Badge status={pos.status as 'entered'} />
                 </div>
