@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BarChart2, CalendarDays, TrendingUp, RefreshCw, Zap } from 'lucide-react';
-import { Card, Badge, Button, Skeleton } from '@/components/ui';
+import { Card, Button, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { StrategyTabs } from './StrategyTabs';
 import { MonthlyPnLChart } from './MonthlyPnLChart';
@@ -17,7 +17,7 @@ import { CHART_COLORS } from '@/lib/design-tokens';
 type PageTab = 'overview' | 'ema_scanner';
 
 export default function AnalyticsPage() {
-  const [pageTab, setPageTab]     = useState<PageTab>('overview');
+  const [pageTab, setPageTab]         = useState<PageTab>('overview');
   const [monthlyData, setMonthlyData] = useState<HistogramPoint[]>([]);
   const [equityData, setEquityData]   = useState<LinePoint[]>([]);
   const [strategies, setStrategies]   = useState<StrategyMetrics[]>([]);
@@ -26,11 +26,7 @@ export default function AnalyticsPage() {
 
   const fetchAll = () => {
     setLoading(true);
-    Promise.all([
-      getMonthlyPnL(year),
-      getEquityCurve(),
-      getStrategyMetrics(),
-    ])
+    Promise.all([getMonthlyPnL(year), getEquityCurve(), getStrategyMetrics()])
       .then(([monthly, equity, strats]) => {
         setMonthlyData(
           monthly.map((m) => ({
@@ -39,12 +35,7 @@ export default function AnalyticsPage() {
             color: m.net_pnl >= 0 ? CHART_COLORS.profit : CHART_COLORS.loss,
           }))
         );
-        setEquityData(
-          equity.map((e) => ({
-            time: e.date as Time,
-            value: e.cumulative_pnl,
-          }))
-        );
+        setEquityData(equity.map((e) => ({ time: e.date as Time, value: e.cumulative_pnl })));
         setStrategies(strats);
       })
       .catch(() => {})
@@ -53,20 +44,16 @@ export default function AnalyticsPage() {
 
   useEffect(() => { fetchAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Best value helpers
   const best = (field: keyof StrategyMetrics, higherBetter = true): string => {
     if (strategies.length === 0) return '';
     const vals = strategies.map((s) => Number(s[field] ?? 0));
     const target = higherBetter ? Math.max(...vals) : Math.min(...vals);
-    const idx = vals.indexOf(target);
-    return strategies[idx]?.strategy_id ?? '';
+    return strategies[vals.indexOf(target)]?.strategy_id ?? '';
   };
 
   const bestWinRate  = best('win_rate');
-  const bestPF       = best('profit_factor');
   const bestNetPnl   = best('net_pnl');
   const bestSignals  = best('total_signals');
-  const bestDrawdown = best('max_drawdown', false);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -116,18 +103,14 @@ export default function AnalyticsPage() {
         </button>
       </div>
 
-      {/* ── EMA Scanner Tab ── */}
-      {pageTab === 'ema_scanner' && (
-        <EmaScanner />
-      )}
+      {/* EMA Scanner Tab */}
+      {pageTab === 'ema_scanner' && <EmaScanner />}
 
-      {/* ── Overview Tab ── */}
+      {/* Overview Tab */}
       {pageTab === 'overview' && (
         <>
-          {/* Strategy Tab Selector + Key Metrics */}
           <StrategyTabs />
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card className="p-0 overflow-hidden">
               <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-[#1e2d5a]">
@@ -162,14 +145,12 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* Strategy Comparison Table */}
           <Card className="p-0 overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1e2d5a]">
               <BarChart2 className="h-4 w-4 text-gold-500" />
               <h2 className="text-sm font-semibold text-white">Strategy Comparison</h2>
               <span className="ml-auto text-xs text-[#4a5a8a]">All strategies — live from DB</span>
             </div>
-
             {loading ? (
               <div className="p-4 space-y-3">
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded" />)}
@@ -208,7 +189,7 @@ export default function AnalyticsPage() {
                         <td className={cn('px-4 py-3 font-mono whitespace-nowrap font-semibold',
                           bestNetPnl === row.strategy_id ? 'text-gold-400 font-bold' :
                           row.net_pnl >= 0 ? 'text-green-400' : 'text-red-400')}>
-                          {row.net_pnl >= 0 ? '+' : ''}₹{row.net_pnl.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                          {row.net_pnl >= 0 ? '+' : ''}&#8377;{row.net_pnl.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-green-400/30 bg-green-400/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-green-400">
