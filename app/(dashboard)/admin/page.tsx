@@ -435,7 +435,7 @@ export default function AdminPage() {
             </Card>
           )}
 
-          {/* BROKER */}}
+          {/* BROKER */}
           {activeSection === 'broker' && (
             <Card>
               <h2 className="font-semibold text-white flex items-center gap-2 mb-5">
