@@ -405,12 +405,37 @@ export default function AdminPage() {
                       The token is unique per strategy — if leaked, contact admin to regenerate.
                     </p>
                   </div>
+
+                  {/* scan_name convention */}
+                  <div className="rounded-lg border border-[#1e2d5a] bg-navy-800/50 p-4 space-y-2">
+                    <p className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      <span className="text-gold-400">&#9432;</span> Chartink Scanner Naming Convention
+                    </p>
+                    <p className="text-xs text-muted">
+                      TradeDash detects signal direction from the <span className="font-mono text-slate-300">scan_name</span> field
+                      Chartink sends in every webhook payload.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                        <span className="text-emerald-400 font-bold text-xs">&#9650; BUY</span>
+                        <span className="text-muted text-xs">name contains <span className="font-mono text-slate-300">BUL</span></span>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20">
+                        <span className="text-red-400 font-bold text-xs">&#9660; SELL</span>
+                        <span className="text-muted text-xs">name contains <span className="font-mono text-slate-300">SEL</span></span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted pt-1">
+                      Example: <span className="font-mono text-gold-400">Tazbul09151115</span> &#8594; BUY &nbsp;|&nbsp;
+                      <span className="font-mono text-gold-400">Tazsel09151115</span> &#8594; SELL
+                    </p>
+                  </div>
                 </div>
               )}
             </Card>
           )}
 
-          {/* BROKER */}
+          {/* BROKER */}}
           {activeSection === 'broker' && (
             <Card>
               <h2 className="font-semibold text-white flex items-center gap-2 mb-5">
