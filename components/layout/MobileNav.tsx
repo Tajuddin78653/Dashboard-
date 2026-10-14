@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Zap, TrendingUp, BarChart2, Menu, Settings } from 'lucide-react';
+import { LayoutDashboard, Zap, TrendingUp, History, BarChart2, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getUser } from '@/lib/auth';
 
@@ -10,9 +10,9 @@ const TABS = [
   { label: 'Home',      href: '/dashboard',  Icon: LayoutDashboard, roles: ['admin','trader','viewer'] },
   { label: 'Signals',   href: '/signals',    Icon: Zap,             roles: ['admin','trader','viewer'] },
   { label: 'Positions', href: '/positions',  Icon: TrendingUp,      roles: ['admin','trader','viewer'] },
+  { label: 'History',   href: '/history',    Icon: History,         roles: ['admin','trader','viewer'] },
   { label: 'Analytics', href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
   { label: 'Admin',     href: '/admin',      Icon: Settings,        roles: ['admin'] },
-  { label: 'More',      href: '/history',    Icon: Menu,            roles: ['trader','viewer'] },
 ];
 
 export function MobileNav() {
