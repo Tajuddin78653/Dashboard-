@@ -68,6 +68,27 @@ export interface ReportData {
   trades: Record<string, unknown>[];
 }
 
+export interface EmaScanStock {
+  symbol: string;
+  signal: 'BUY' | 'SELL' | 'NONE';
+  close: number | null;
+  ema13: number | null;
+  ema50: number | null;
+  rsi: number | null;
+  macd: number | null;
+  macd_signal: number | null;
+  error: string | null;
+}
+export interface EmaScanResult {
+  market_trend: 'BULLISH' | 'BEARISH' | 'SIDEWAYS';
+  total_scanned: number;
+  buy_count: number;
+  sell_count: number;
+  buy_signals: EmaScanStock[];
+  sell_signals: EmaScanStock[];
+  scan_errors: number;
+}
+
 // ── Fetch helper ───────────────────────────────────────────────────────────
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
