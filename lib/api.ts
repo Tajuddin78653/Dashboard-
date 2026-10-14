@@ -187,3 +187,8 @@ export async function testTelegram() {
 export async function getAdminConfig() {
   return apiFetch<Record<string, unknown>>('/admin/config');
 }
+
+// 🔍 EMA Scanner
+export async function runEmaScanner() {
+  return apiFetch<EmaScanResult>('/scanner/run', { method: 'POST' });
+}
