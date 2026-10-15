@@ -210,6 +210,10 @@ export async function getAdminConfig() {
 }
 
 // 🔍 EMA Scanner
+// 🔍 EMA Scanner
+export async function getEmaLatest() {
+  return apiFetch<EmaScanResult | null>('/scanner/latest');
+}
 export async function runEmaScanner() {
   return apiFetch<EmaScanResult>('/scanner/run', { method: 'POST' });
 }
