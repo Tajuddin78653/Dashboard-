@@ -154,35 +154,48 @@ export function EmaScanner() {
     setMarketOpen(open);
     loadLatest(false);
 
-    if (open) {
-      // Poll Redis cache every 60s (backend updates it every 5min via scheduler)
+    const startPolling = () => {
+      if (pollRef.current) return; // already running
       setNextRefresh(60);
       pollRef.current = setInterval(() => {
         loadLatest(true);
         setNextRefresh(60);
       }, POLL_INTERVAL_MS);
-
-      // Countdown ticker
       countRef.current = setInterval(() => {
         setNextRefresh(prev => (prev <= 1 ? 60 : prev - 1));
       }, 1000);
-    }
+    };
+
+    const stopPolling = () => {
+      if (pollRef.current)  { clearInterval(pollRef.current);  pollRef.current = null; }
+      if (countRef.current) { clearInterval(countRef.current); countRef.current = null; }
+    };
+
+    if (open) startPolling();
+
+    // Pause polling when tab is hidden, resume when visible again
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else if (isMarketOpen()) {
+        loadLatest(true); // immediate refresh when tab becomes visible
+        startPolling();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
     // Check market status every minute
     const marketCheck = setInterval(() => {
       const nowOpen = isMarketOpen();
       setMarketOpen(nowOpen);
-      if (!nowOpen && pollRef.current) {
-        clearInterval(pollRef.current);
-        clearInterval(countRef.current!);
-        pollRef.current = null;
-      }
+      if (!nowOpen) stopPolling();
+      else if (nowOpen && !pollRef.current && !document.hidden) startPolling();
     }, 60_000);
 
     return () => {
-      if (pollRef.current)  clearInterval(pollRef.current);
-      if (countRef.current) clearInterval(countRef.current);
+      stopPolling();
       clearInterval(marketCheck);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
