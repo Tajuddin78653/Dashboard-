@@ -16,9 +16,10 @@ import {
 type ActiveTab = 'screener' | 'backtest' | 'presets';
 
 const INDICATORS = [
-  'close', 'open', 'high', 'low', 'volume', 'vol_avg20',
+  'close', 'open', 'high', 'low', 'volume', 'vol_avg20', 'vol_surge',
   'ema9', 'ema20', 'ema50', 'ema200', 'sma20', 'sma50',
   'rsi14', 'macd_line', 'macd_signal', 'macd_hist',
+  'supertrend', 'vwap', 'bb_upper', 'bb_mid', 'bb_lower', 'atr14',
 ];
 const OPERATORS = ['>', '>=', '<', '<=', '==', 'crosses_above', 'crosses_below'];
 const PATTERNS = ['DOJI', 'HAMMER', 'BULLISH_ENGULFING', 'BEARISH_ENGULFING', 'SHOOTING_STAR'];
