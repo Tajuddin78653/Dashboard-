@@ -19,10 +19,6 @@ export default function DashboardPage() {
     console.log('Strategy switched to:', newStrategy.name);
   };
 
-  const handleManualExit = async (tradeId: string) => {
-    console.log('Manual market exit executed for trade:', tradeId);
-  };
-
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       
@@ -45,7 +41,6 @@ export default function DashboardPage() {
       {/* ── Row 3: Live Open Positions with Dynamic Trailing SL ── */}
       <OpenPositionsCard
         isPaperMode={paperTrading}
-        onManualExit={handleManualExit}
       />
 
       {/* ── Row 4: Chartink Signals Feed & Scanner Performance ── */}
