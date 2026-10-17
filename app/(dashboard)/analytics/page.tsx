@@ -1,20 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart2, CalendarDays, TrendingUp, RefreshCw, Zap } from 'lucide-react';
+import { BarChart2, CalendarDays, TrendingUp, RefreshCw, Zap, Filter } from 'lucide-react';
 import { Card, Button, Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { StrategyTabs } from './StrategyTabs';
 import { MonthlyPnLChart } from './MonthlyPnLChart';
 import { EquityCurveChart } from './EquityCurveChart';
 import { EmaScanner } from './EmaScanner';
+import { ChartinkScreener } from '@/components/ChartinkScreener';
 import { getMonthlyPnL, getEquityCurve, getStrategyMetrics } from '@/lib/api';
 import type { StrategyMetrics } from '@/lib/api';
 import type { HistogramPoint, LinePoint } from '@/components/charts/LightweightChart';
 import type { Time } from 'lightweight-charts';
 import { CHART_COLORS } from '@/lib/design-tokens';
 
-type PageTab = 'overview' | 'ema_scanner';
+type PageTab = 'overview' | 'ema_scanner' | 'screener';
 
 export default function AnalyticsPage() {
   const [pageTab, setPageTab]         = useState<PageTab>('overview');
@@ -78,7 +79,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Page Tab Pills */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setPageTab('overview')}
           className={cn(
@@ -101,10 +102,24 @@ export default function AnalyticsPage() {
         >
           <Zap className="h-3.5 w-3.5" /> 13/50 EMA
         </button>
+        <button
+          onClick={() => setPageTab('screener')}
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+            pageTab === 'screener'
+              ? 'bg-gold-500 text-navy-900 font-bold'
+              : 'bg-navy-800 text-[#4a5a8a] hover:bg-navy-700 hover:text-slate-200',
+          )}
+        >
+          <Filter className="h-3.5 w-3.5" /> Stock Screener
+        </button>
       </div>
 
       {/* EMA Scanner Tab */}
       {pageTab === 'ema_scanner' && <EmaScanner />}
+
+      {/* Stock Screener Tab */}
+      {pageTab === 'screener' && <ChartinkScreener />}
 
       {/* Overview Tab */}
       {pageTab === 'overview' && (

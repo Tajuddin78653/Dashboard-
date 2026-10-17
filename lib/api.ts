@@ -210,10 +210,66 @@ export async function getAdminConfig() {
 }
 
 // 🔍 EMA Scanner
-// 🔍 EMA Scanner
 export async function getEmaLatest() {
   return apiFetch<EmaScanResult | null>('/scanner/latest');
 }
 export async function runEmaScanner() {
   return apiFetch<EmaScanResult>('/scanner/run', { method: 'POST' });
+}
+
+// ── Screener ───────────────────────────────────────────────────────────────
+export interface ConditionItem {
+  indicator?: string;
+  operator?: string;
+  value?: number;
+  compare_to?: string;
+  pattern?: string;
+}
+export interface StockResult {
+  symbol: string; close: number; open: number; high: number; low: number; volume: number;
+  ema9: number; ema20: number; ema50: number; ema200: number;
+  sma20: number; sma50: number; rsi14: number;
+  macd_line: number; macd_signal: number; macd_hist: number;
+  vol_avg20: number;
+  patterns: Record<string, boolean>;
+}
+export interface ScreenerResult {
+  scanned: number; matched: number; results: StockResult[];
+}
+export interface BacktestTrade {
+  symbol: string; entry_date: string; exit_date: string;
+  entry_price: number; exit_price: number; return_pct: number; result: 'WIN' | 'LOSS';
+}
+export interface BacktestResult {
+  total_signals: number; wins: number; losses: number;
+  win_rate: number; avg_return_pct: number; trades: BacktestTrade[];
+}
+export interface ScreenerPreset {
+  id: string; name: string; description: string; conditions: ConditionItem[];
+}
+export interface ScreenerMeta {
+  indicators: string[]; patterns: string[]; operators: string[];
+  intervals: string[]; default_symbols: string[];
+}
+
+export async function getScreenerMeta() {
+  return apiFetch<ScreenerMeta>('/api/screener/meta');
+}
+export async function getScreenerPresets() {
+  return apiFetch<{ presets: ScreenerPreset[] }>('/api/screener/presets');
+}
+export async function runScreener(symbols: string[], conditions: ConditionItem[], interval = '1d') {
+  return apiFetch<ScreenerResult>('/api/screener/run', {
+    method: 'POST',
+    body: JSON.stringify({ symbols, conditions, interval }),
+  });
+}
+export async function getStockIndicators(symbol: string, interval = '1d') {
+  return apiFetch<StockResult>(`/api/screener/stock/${symbol}?interval=${interval}`);
+}
+export async function runBacktest(symbols: string[], conditions: ConditionItem[], period = '1y', interval = '1d') {
+  return apiFetch<BacktestResult>('/api/screener/backtest', {
+    method: 'POST',
+    body: JSON.stringify({ symbols, conditions, period, interval }),
+  });
 }
