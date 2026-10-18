@@ -5,20 +5,44 @@ import { Zap, Send, Globe, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucid
 import { cn } from '@/lib/utils';
 import { getSignals, type SignalResponse } from '@/lib/api';
 
+// IST market hours helper
+function isMarketOpen(): boolean {
+  const now = new Date();
+  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const day = ist.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return mins >= 9 * 60 + 15 && mins < 15 * 60 + 30;
+}
+
 export function ChartinkSignalFeed() {
   const [signals, setSignals] = useState<SignalResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchSignals = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await getSignals({ page_size: '20' });
       setSignals(data.items);
+      setLastUpdated(new Date());
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
 
+  // Fetch on mount
   useEffect(() => { fetchSignals(); }, [fetchSignals]);
+
+  // Auto-refresh every 10s during market hours, every 60s otherwise
+  useEffect(() => {
+    const getInterval = () => isMarketOpen() ? 10_000 : 60_000;
+    let id = setInterval(fetchSignals, getInterval());
+    // Recalculate interval every minute
+    const recalc = setInterval(() => {
+      clearInterval(id);
+      id = setInterval(fetchSignals, getInterval());
+    }, 60_000);
+    return () => { clearInterval(id); clearInterval(recalc); };
+  }, [fetchSignals]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -63,10 +87,17 @@ export function ChartinkSignalFeed() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Listening Live
-          </span>
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              {isMarketOpen() ? 'Live · 10s refresh' : 'Market Closed · 60s'}
+            </span>
+            {lastUpdated && (
+              <span className="text-[9px] text-slate-600 font-mono">
+                {lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            )}
+          </div>
           <button onClick={fetchSignals} disabled={loading} className="text-slate-500 hover:text-slate-300">
             <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
           </button>

@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Menu,
-  Search,
   Bell,
   ChevronDown,
-  Clock,
   LogOut,
   User,
   ShieldAlert,
@@ -21,13 +19,12 @@ import { getUser, removeToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { EmergencyKillSwitchModal } from '@/components/EmergencyKillSwitchModal';
 import { NotificationDrawer } from '@/components/NotificationDrawer';
+import { getAnalyticsSummary, getOpenTrades, exitTrade, type OpenPositionResponse } from '@/lib/api';
 
 interface TopBarProps {
   title: string;
   onMobileMenuClick?: () => void;
   className?: string;
-  netPnl?: number;
-  openPositionCount?: number;
 }
 
 // ─── IST market-hours helper ─────────────────────────────────────────────────
@@ -44,14 +41,15 @@ export function TopBar({
   title,
   onMobileMenuClick,
   className,
-  netPnl = 4250,
-  openPositionCount = 2,
 }: TopBarProps) {
-  const [marketOpen, setMarketOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [marketOpen, setMarketOpen]       = useState(false);
+  const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [killModalOpen, setKillModalOpen] = useState(false);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
-  const [isPaper, setIsPaper] = useState(true);
+  const [isPaper, setIsPaper]             = useState(true);
+  // Live session P&L + position count fetched directly
+  const [netPnl, setNetPnl]               = useState(0);
+  const [openPositionCount, setOpenPositionCount] = useState(0);
 
   const { paperTrading, loading: modeLoading } = useTradingMode();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -69,6 +67,20 @@ export function TopBar({
     const id = setInterval(() => setMarketOpen(isMarketOpen()), 60_000);
     return () => clearInterval(id);
   }, []);
+
+  // Fetch session P&L + open positions every 60s
+  const fetchSessionStats = useCallback(async () => {
+    try {
+      const [summary, open] = await Promise.all([getAnalyticsSummary(), getOpenTrades()]);
+      setNetPnl(summary.today_pnl ?? 0);
+      setOpenPositionCount(open.length);
+    } catch { /* silent — TopBar should never crash the layout */ }
+  }, []);
+  useEffect(() => {
+    fetchSessionStats();
+    const id = setInterval(fetchSessionStats, 60_000);
+    return () => clearInterval(id);
+  }, [fetchSessionStats]);
 
   // Sync initial paperTrading from context if available
   useEffect(() => {
@@ -94,8 +106,13 @@ export function TopBar({
   }
 
   const handleKillSwitchConfirm = async () => {
-    // Simulated emergency square off API call
-    console.log('Emergency Kill Switch executed: All positions squared off.');
+    const openTrades = await getOpenTrades();
+    await Promise.all(
+      openTrades.map((t: OpenPositionResponse) =>
+        exitTrade(t.trade_id, t.current_price ?? t.entry_price, 'emergency_kill_switch')
+      )
+    );
+    await fetchSessionStats();
   };
 
   return (

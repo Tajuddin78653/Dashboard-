@@ -1,19 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Bell,
-  X,
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  Zap,
-  Volume2,
-  VolumeX,
+  Bell, X, CheckCircle2, AlertCircle, TrendingUp,
+  ArrowUpRight, Zap, Volume2, VolumeX, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getSignals, getTrades } from '@/lib/api';
 
 export interface AppNotification {
   id: string;
@@ -24,49 +17,72 @@ export interface AppNotification {
   read: boolean;
 }
 
-const DEFAULT_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'n1',
-    type: 'target_hit',
-    title: 'Target Achieved (+1.50%)',
-    message: 'RELIANCE target ₹2,887.65 hit! Realized P&L: +₹1,420.00',
-    timestamp: '10:18 AM',
-    read: false,
-  },
-  {
-    id: 'n2',
-    type: 'tsl_updated',
-    title: 'Trailing Stop Loss Ratcheted',
-    message: 'TATAMOTORS peak price reached ₹991.20. TSL locked at ₹981.30 (in profit)',
-    timestamp: '10:15 AM',
-    read: false,
-  },
-  {
-    id: 'n3',
-    type: 'order_filled',
-    title: 'Order Executed (BUY)',
-    message: 'INFY: 50 Qty bought @ ₹1,820.00 (Smart Strategy)',
-    timestamp: '09:42 AM',
-    read: true,
-  },
-  {
-    id: 'n4',
-    type: 'signal',
-    title: 'Chartink Alert Received',
-    message: 'Scanner "15m Breakout" fired for SBIN @ ₹810.00',
-    timestamp: '09:30 AM',
-    read: true,
-  },
-];
-
 interface NotificationDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function NotificationDrawer({ isOpen, onClose }: NotificationDrawerProps) {
-  const [notifications, setNotifications] = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const [signalsRes, tradesRes] = await Promise.all([
+        getSignals({ page_size: '10', page: '1' }),
+        getTrades({ page_size: '10', status: 'closed' }),
+      ]);
+
+      const notifs: AppNotification[] = [];
+
+      // Convert recent closed trades → notifications
+      for (const t of (tradesRes.items ?? []).slice(0, 6)) {
+        const pnl = t.net_pnl ?? 0;
+        const time = t.exit_time
+          ? new Date(t.exit_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+          : '—';
+        let type: AppNotification['type'] = 'order_filled';
+        let title = `${t.symbol} Trade Closed`;
+        if (t.status === 'target-hit') { type = 'target_hit'; title = `Target Hit ✅ ${t.symbol}`; }
+        else if (t.status === 'sl-hit') { type = 'sl_hit'; title = `SL Hit ⚠️ ${t.symbol}`; }
+        else if (t.status === 'trailing-sl-hit') { type = 'tsl_updated'; title = `Trailing SL Exit ${t.symbol}`; }
+        notifs.push({
+          id: `trade-${t.id}`,
+          type,
+          title,
+          message: `${t.signal_type} ${t.quantity} qty @ ₹${t.entry_price} → ₹${t.exit_price ?? '—'} | P&L: ${pnl >= 0 ? '+' : ''}₹${pnl.toFixed(2)}`,
+          timestamp: time,
+          read: false,
+        });
+      }
+
+      // Convert recent signals → notifications
+      for (const s of (signalsRes.items ?? []).slice(0, 4)) {
+        const time = new Date(s.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        notifs.push({
+          id: `signal-${s.id}`,
+          type: 'signal',
+          title: `Signal: ${s.signal_type} ${s.symbol}`,
+          message: `Scanner alert @ ₹${s.entry_price ?? '—'} | Status: ${s.status}`,
+          timestamp: time,
+          read: true,
+        });
+      }
+
+      setNotifications(notifs);
+    } catch {
+      // keep empty
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch when drawer opens
+  useEffect(() => {
+    if (isOpen) fetchNotifications();
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
 
@@ -122,6 +138,14 @@ export function NotificationDrawer({ isOpen, onClose }: NotificationDrawerProps)
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={fetchNotifications}
+                disabled={loading}
+                title="Refresh notifications"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin text-indigo-400')} />
+              </button>
               <button
                 onClick={() => setSoundEnabled((v) => !v)}
                 title={soundEnabled ? 'Mute Alert Sounds' : 'Enable Alert Sounds'}

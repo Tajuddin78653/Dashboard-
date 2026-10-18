@@ -35,17 +35,31 @@ export function MetricKPICards({
   data = {},
   loading = false,
 }: MetricKPICardsProps) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-slate-800 bg-[#0d1527] p-4 h-[88px] animate-pulse">
+            <div className="h-2 w-20 bg-slate-700 rounded mb-3" />
+            <div className="h-6 w-28 bg-slate-700 rounded mb-2" />
+            <div className="h-1.5 w-full bg-slate-800 rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const {
-    dailyRealizedPnl = 3100,
-    dailyRealizedPnlPct = 2.45,
-    openUnrealizedPnl = 1150,
-    openUnrealizedPnlPct = 1.12,
-    winRatePct = 80,
-    winCount = 4,
-    lossCount = 1,
-    openPositionsCount = 2,
-    maxPositionsCount = 3,
-    dailyLossUsed = 1150,
+    dailyRealizedPnl = 0,
+    dailyRealizedPnlPct = 0,
+    openUnrealizedPnl = 0,
+    openUnrealizedPnlPct = 0,
+    winRatePct = 0,
+    winCount = 0,
+    lossCount = 0,
+    openPositionsCount = 0,
+    maxPositionsCount = 5,
+    dailyLossUsed = 0,
     dailyLossLimit = 5000,
   } = data;
 
