@@ -84,12 +84,31 @@ interface CaptainStrategySelectorProps {
   onStrategyChange?: (strategy: StrategyConfig) => void;
 }
 
+const LS_KEY_STRATEGY = 'tradedash_active_strategy';
+const LS_KEY_CUSTOM   = 'tradedash_custom_strategy';
+
+function loadPersistedStrategy(): StrategyKey {
+  if (typeof window === 'undefined') return 'smart';
+  return (localStorage.getItem(LS_KEY_STRATEGY) as StrategyKey) || 'smart';
+}
+
+function loadPersistedCustom(): StrategyConfig {
+  if (typeof window === 'undefined') return PRESET_STRATEGIES.custom;
+  try {
+    const raw = localStorage.getItem(LS_KEY_CUSTOM);
+    return raw ? { ...PRESET_STRATEGIES.custom, ...JSON.parse(raw) } : PRESET_STRATEGIES.custom;
+  } catch { return PRESET_STRATEGIES.custom; }
+}
+
 export function CaptainStrategySelector({
   activeStrategyKey = 'smart',
   onStrategyChange,
 }: CaptainStrategySelectorProps) {
-  const [selectedKey, setSelectedKey] = useState<StrategyKey>(activeStrategyKey);
-  const [strategies, setStrategies] = useState(PRESET_STRATEGIES);
+  const [selectedKey, setSelectedKey] = useState<StrategyKey>(() => loadPersistedStrategy());
+  const [strategies, setStrategies] = useState(() => ({
+    ...PRESET_STRATEGIES,
+    custom: loadPersistedCustom(),
+  }));
   const [customModalOpen, setCustomModalOpen] = useState(false);
 
   // Custom modal edit state
@@ -102,6 +121,9 @@ export function CaptainStrategySelector({
 
   const handleSelect = (key: StrategyKey) => {
     setSelectedKey(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_KEY_STRATEGY, key);
+    }
     if (key === 'custom') {
       setCustomModalOpen(true);
     }
@@ -126,6 +148,16 @@ export function CaptainStrategySelector({
       custom: updatedCustom,
     }));
     setSelectedKey('custom');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LS_KEY_STRATEGY, 'custom');
+      localStorage.setItem(LS_KEY_CUSTOM, JSON.stringify({
+        targetPct: updatedCustom.targetPct,
+        slPct: updatedCustom.slPct,
+        tslPct: updatedCustom.tslPct,
+        capitalPct: updatedCustom.capitalPct,
+        riskRewardRatio: updatedCustom.riskRewardRatio,
+      }));
+    }
     setCustomModalOpen(false);
 
     if (onStrategyChange) {
