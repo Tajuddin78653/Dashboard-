@@ -433,15 +433,24 @@ export function ChartinkScreener() {
           {/* Symbol input */}
           <div>
             <p className="mb-1.5 text-[10px] uppercase tracking-wider text-[#4a5a8a]">
-              Symbols (leave empty for NSE Top 30)
+              {activeTab === 'backtest'
+                ? 'Symbols (max 10 — leave empty for top 5 NSE)'
+                : 'Symbols (leave empty for NSE Top 30)'}
             </p>
             <textarea
               value={symbolInput}
               onChange={(e) => setSymbolInput(e.target.value)}
-              placeholder="RELIANCE, TCS, INFY, HDFCBANK..."
+              placeholder={activeTab === 'backtest'
+                ? 'RELIANCE, TCS, INFY, HDFCBANK, ICICIBANK (max 10)'
+                : 'RELIANCE, TCS, INFY, HDFCBANK...'}
               rows={2}
               className="w-full rounded-lg border border-[#1e2d5a] bg-[#0a1220] px-3 py-2 text-sm text-slate-200 placeholder:text-[#4a5a8a] focus:outline-none focus:ring-1 focus:ring-gold-500 resize-none"
             />
+            {activeTab === 'backtest' && (
+              <p className="mt-1 text-[10px] text-[#4a5a8a]">
+                ⚡ Backtest downloads live price data — 5 symbols ≈ 15s, 10 symbols ≈ 30s
+              </p>
+            )}
           </div>
 
           {/* Backtest period */}
@@ -508,7 +517,20 @@ export function ChartinkScreener() {
               {period} · {interval}
             </Badge>
           </div>
-          <BacktestSummary result={backtestResult} />
+          {backtestResult.total_signals === 0 ? (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-center">
+              <p className="text-sm font-semibold text-amber-400 mb-1">No signals found</p>
+              <p className="text-xs text-[#4a5a8a]">
+                Your conditions never triggered on the selected symbols during {period}.
+                Try loosening conditions (e.g. RSI &gt; 40 instead of 60), a longer period, or different symbols.
+              </p>
+              {(backtestResult as any).note && (
+                <p className="mt-2 text-[10px] text-[#4a5a8a] italic">{(backtestResult as any).note}</p>
+              )}
+            </div>
+          ) : (
+            <BacktestSummary result={backtestResult} />
+          )}
         </Card>
       )}
 
