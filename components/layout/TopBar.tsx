@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { EmergencyKillSwitchModal } from '@/components/EmergencyKillSwitchModal';
 import { NotificationDrawer } from '@/components/NotificationDrawer';
 import { getAnalyticsSummary, getOpenTrades, exitTrade, type OpenPositionResponse } from '@/lib/api';
+import { useWebSocket } from '@/lib/useWebSocket';
 
 interface TopBarProps {
   title: string;
@@ -50,6 +51,9 @@ export function TopBar({
   // Live session P&L + position count fetched directly
   const [netPnl, setNetPnl]               = useState(0);
   const [openPositionCount, setOpenPositionCount] = useState(0);
+
+  // Real WebSocket connection
+  const wsStatus = useWebSocket(undefined);
 
   const { paperTrading, loading: modeLoading } = useTradingMode();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -177,10 +181,17 @@ export function TopBar({
           </div>
 
           {/* WebSocket Live Stream Pulse */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300">
-            <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
-            <span className="font-mono text-emerald-400 font-medium">WS Live</span>
-            <span className="text-slate-500 text-[10px]">12ms</span>
+          <div className={cn(
+            'flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900/80 border text-[11px]',
+            wsStatus.connected ? 'border-slate-800 text-slate-300' : 'border-rose-900/40 text-slate-500'
+          )}>
+            <Radio className={cn('h-3 w-3', wsStatus.connected ? 'text-emerald-400 animate-pulse' : 'text-rose-500')} />
+            <span className={cn('font-mono font-medium', wsStatus.connected ? 'text-emerald-400' : 'text-rose-400')}>
+              {wsStatus.connected ? 'WS Live' : 'WS Off'}
+            </span>
+            {wsStatus.connected && wsStatus.latencyMs !== null && (
+              <span className="text-slate-500 text-[10px]">{wsStatus.latencyMs}ms</span>
+            )}
           </div>
         </div>
 

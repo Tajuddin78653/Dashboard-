@@ -3,12 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   ArrowUpRight, ArrowDownRight, LogOut, Sparkles,
-  Lock, Layers, Clock, Activity, RefreshCw, X, AlertTriangle,
+  Lock, Layers, Clock, Activity, RefreshCw, X, AlertTriangle, Edit2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TrailingSLProgressBar } from './TrailingSLProgressBar';
 import { Button } from '@/components/ui/Button';
 import { getOpenTrades, exitTrade, type OpenPositionResponse } from '@/lib/api';
+import { useWebSocket, type WsMessage } from '@/lib/useWebSocket';
+import { apiRequest } from '@/lib/api';
 
 // ── Manual Exit Modal ────────────────────────────────────────────────────────
 function ManualExitModal({
@@ -135,12 +137,81 @@ function ManualExitModal({
   );
 }
 
+// ── Modify SL/Target Modal ────────────────────────────────────────────────────
+function ModifyTradeModal({
+  position,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  position: OpenPositionResponse;
+  onConfirm: (sl: number, tp: number) => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [sl, setSl] = useState(String(position.stop_loss));
+  const [tp, setTp] = useState(String(position.target_price));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-[#0d1527] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <Edit2 className="h-4 w-4 text-indigo-400" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-white">Modify SL / Target</p>
+              <p className="text-[10px] text-slate-400">{position.symbol} · {position.signal_type}</p>
+            </div>
+          </div>
+          <button onClick={onCancel} className="text-slate-500 hover:text-slate-300">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Stop Loss (₹)</label>
+            <input
+              type="number" value={sl} onChange={(e) => setSl(e.target.value)} step="0.05"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 font-mono text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">Target Price (₹)</label>
+            <input
+              type="number" value={tp} onChange={(e) => setTp(e.target.value)} step="0.05"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2.5 font-mono text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 border-t border-slate-800 px-5 py-4">
+          <button
+            onClick={onCancel} disabled={loading}
+            className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 disabled:opacity-50"
+          >Cancel</button>
+          <button
+            onClick={() => onConfirm(parseFloat(sl), parseFloat(tp))}
+            disabled={loading || !sl || !tp || isNaN(parseFloat(sl)) || isNaN(parseFloat(tp))}
+            className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-500 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Edit2 className="h-4 w-4" />}
+            {loading ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolean }) {
   const [positions, setPositions] = useState<OpenPositionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [exitTarget, setExitTarget] = useState<OpenPositionResponse | null>(null);
   const [exiting, setExiting] = useState(false);
+  const [modifyTarget, setModifyTarget] = useState<OpenPositionResponse | null>(null);
+  const [modifying, setModifying] = useState(false);
 
   const fetchPositions = useCallback(async () => {
     setLoading(true);
@@ -153,6 +224,30 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
 
   useEffect(() => { fetchPositions(); }, [fetchPositions]);
 
+  // ── Real-time WebSocket price updates ──────────────────────────────────────
+  const handleWsMessage = useCallback((msg: WsMessage) => {
+    if (msg.type === 'price_update') {
+      setPositions((prev) =>
+        prev.map((p) =>
+          p.trade_id === (msg.trade_id as string)
+            ? {
+                ...p,
+                current_price: msg.current_price as number,
+                mtm: msg.mtm as number,
+                stop_loss: (msg.stop_loss as number) ?? p.stop_loss,
+                target_price: (msg.target_price as number) ?? p.target_price,
+              }
+            : p
+        )
+      );
+    } else if (msg.type === 'trade_closed') {
+      // Remove closed trade from open positions immediately
+      setPositions((prev) => prev.filter((p) => p.trade_id !== (msg.trade_id as string)));
+    }
+  }, []);
+
+  useWebSocket(handleWsMessage);
+
   const handleConfirmExit = async (price: number, reason: string) => {
     if (!exitTarget) return;
     setExiting(true);
@@ -164,6 +259,23 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
       console.error('Exit failed', e);
     } finally {
       setExiting(false);
+    }
+  };
+
+  const handleConfirmModify = async (sl: number, tp: number) => {
+    if (!modifyTarget) return;
+    setModifying(true);
+    try {
+      await apiRequest(`/trades/${modifyTarget.trade_id}/update`, {
+        method: 'PUT',
+        body: JSON.stringify({ stop_loss: sl, target_price: tp }),
+      });
+      setModifyTarget(null);
+      await fetchPositions();
+    } catch (e) {
+      console.error('Modify failed', e);
+    } finally {
+      setModifying(false);
     }
   };
 
@@ -186,6 +298,15 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
           onConfirm={handleConfirmExit}
           onCancel={() => setExitTarget(null)}
           loading={exiting}
+        />
+      )}
+      {/* Modify SL/Target Modal */}
+      {modifyTarget && (
+        <ModifyTradeModal
+          position={modifyTarget}
+          onConfirm={handleConfirmModify}
+          onCancel={() => setModifyTarget(null)}
+          loading={modifying}
         />
       )}
 
@@ -254,8 +375,8 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
                     </div>
                   </div>
 
-                  {/* P&L + Exit Button */}
-                  <div className="flex items-center gap-3">
+                  {/* P&L + Action Buttons */}
+                  <div className="flex items-center gap-2">
                     <div className="text-right">
                       <div className={cn('text-base font-mono font-bold flex items-center justify-end gap-1', isProfit ? 'text-emerald-400' : 'text-rose-400')}>
                         {isProfit ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
@@ -265,6 +386,14 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
                         ({isProfit ? '+' : ''}{(pos.pnl_pct ?? 0).toFixed(2)}%)
                       </span>
                     </div>
+                    <button
+                      onClick={() => setModifyTarget(pos)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/15 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition-colors"
+                      title="Modify SL / Target"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Modify</span>
+                    </button>
                     <Button
                       variant="danger"
                       size="sm"
@@ -272,7 +401,7 @@ export function OpenPositionsCard({ isPaperMode = true }: { isPaperMode?: boolea
                       className="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold py-1.5 px-3"
                     >
                       <LogOut className="h-3.5 w-3.5 mr-1" />
-                      Market Exit
+                      Exit
                     </Button>
                   </div>
                 </div>
