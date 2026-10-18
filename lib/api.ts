@@ -245,7 +245,13 @@ export interface BacktestResult {
   win_rate: number; avg_return_pct: number; trades: BacktestTrade[];
 }
 export interface ScreenerPreset {
-  id: string; name: string; description: string; conditions: ConditionItem[];
+  id: string; name: string; description: string;
+  conditions: ConditionItem[];
+  chartink_clause?: string;
+}
+export interface ChartinkPresetApi {
+  id: string; name: string; description: string;
+  scan_clause: string; indicators: string[];
 }
 export interface ScreenerMeta {
   indicators: string[]; patterns: string[]; operators: string[];
@@ -256,7 +262,7 @@ export async function getScreenerMeta() {
   return apiFetch<ScreenerMeta>('/api/screener/meta');
 }
 export async function getScreenerPresets() {
-  return apiFetch<{ presets: ScreenerPreset[] }>('/api/screener/presets');
+  return apiFetch<{ presets: ScreenerPreset[]; chartink_presets: ChartinkPresetApi[] }>('/api/screener/presets');
 }
 export async function runScreener(symbols: string[], conditions: ConditionItem[], interval = '1d') {
   return apiFetch<ScreenerResult>('/api/screener/run', {

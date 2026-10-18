@@ -15,6 +15,14 @@ import {
 // ── Types ────────────────────────────────────────────────────────────────────
 type ActiveTab = 'screener' | 'backtest' | 'presets';
 
+interface ChartinkPreset {
+  id: string;
+  name: string;
+  scan_clause: string;
+  description: string;
+  indicators: string[];
+}
+
 const INDICATORS = [
   'close', 'open', 'high', 'low', 'volume', 'vol_avg20', 'vol_surge',
   'ema9', 'ema20', 'ema50', 'ema200', 'sma20', 'sma50',
@@ -290,7 +298,9 @@ export function ChartinkScreener() {
   const [screenerResult, setScreenerResult] = useState<{ scanned: number; matched: number; results: StockResult[] } | null>(null);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [presets, setPresets] = useState<ScreenerPreset[]>([]);
+  const [chartinkPresets, setChartinkPresets] = useState<ChartinkPreset[]>([]);
   const [presetsLoaded, setPresetsLoaded] = useState(false);
+  const [copiedClause, setCopiedClause] = useState('');
   const [error, setError] = useState('');
 
   const getSymbols = () =>
@@ -338,9 +348,17 @@ export function ChartinkScreener() {
     try {
       const data = await getScreenerPresets();
       setPresets(data.presets);
+      if (data.chartink_presets) setChartinkPresets(data.chartink_presets);
       setPresetsLoaded(true);
     } catch { /* ignore */ }
   }, [presetsLoaded]);
+
+  const handleCopyClause = (clause: string) => {
+    navigator.clipboard.writeText(clause).then(() => {
+      setCopiedClause(clause);
+      setTimeout(() => setCopiedClause(''), 2000);
+    });
+  };
 
   const handleApplyPreset = (preset: ScreenerPreset) => {
     setConditions(preset.conditions);
@@ -496,38 +514,93 @@ export function ChartinkScreener() {
 
       {/* ── Presets ──────────────────────────────────────────────────── */}
       {activeTab === 'presets' && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {presets.length === 0 ? (
-            <div className="col-span-2 py-12 text-center text-sm text-[#4a5a8a]">
-              <RefreshCw className="mx-auto h-5 w-5 animate-spin mb-2" />
-              Loading presets…
-            </div>
-          ) : presets.map((preset) => (
-            <Card key={preset.id} className="p-4 hover:border-gold-500/30 transition-colors cursor-pointer group">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Zap className="h-3.5 w-3.5 text-gold-400 flex-shrink-0" />
-                    <p className="text-sm font-semibold text-white truncate">{preset.name}</p>
-                  </div>
-                  <p className="text-xs text-[#4a5a8a] leading-relaxed">{preset.description}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {preset.conditions.map((c, i) => (
-                      <Badge key={i} className="bg-navy-800 text-[#4a5a8a] border border-[#1e2d5a]">
-                        {c.pattern ? c.pattern.replace(/_/g, ' ') : `${c.indicator?.toUpperCase()} ${c.operator} ${c.compare_to?.toUpperCase() ?? c.value}`}
-                      </Badge>
-                    ))}
-                  </div>
+        <div className="space-y-4">
+          {/* TradeDash condition presets */}
+          <div>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#4a5a8a]">
+              TradeDash Condition Presets
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {presets.length === 0 ? (
+                <div className="col-span-2 py-8 text-center text-sm text-[#4a5a8a]">
+                  <RefreshCw className="mx-auto h-5 w-5 animate-spin mb-2" />
+                  Loading presets…
                 </div>
-                <button
-                  onClick={() => handleApplyPreset(preset)}
-                  className="flex-shrink-0 rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-1.5 text-xs font-semibold text-gold-400 hover:bg-gold-500/20 transition-colors"
-                >
-                  Apply
-                </button>
+              ) : presets.map((preset) => (
+                <Card key={preset.id} className="p-4 hover:border-gold-500/30 transition-colors cursor-pointer group">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="h-3.5 w-3.5 text-gold-400 flex-shrink-0" />
+                        <p className="text-sm font-semibold text-white truncate">{preset.name}</p>
+                      </div>
+                      <p className="text-xs text-[#4a5a8a] leading-relaxed">{preset.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {preset.conditions.map((c, i) => (
+                          <Badge key={i} className="bg-navy-800 text-[#4a5a8a] border border-[#1e2d5a]">
+                            {c.pattern ? c.pattern.replace(/_/g, ' ') : `${c.indicator?.toUpperCase()} ${c.operator} ${c.compare_to?.toUpperCase() ?? c.value}`}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleApplyPreset(preset)}
+                      className="flex-shrink-0 rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-1.5 text-xs font-semibold text-gold-400 hover:bg-gold-500/20 transition-colors"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Real Chartink scan_clause presets — REA-captured */}
+          {chartinkPresets.length > 0 && (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#4a5a8a]">
+                  Chartink scan_clause (REA-captured · copy to Chartink)
+                </p>
+                <Badge className="bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  Live syntax
+                </Badge>
               </div>
-            </Card>
-          ))}
+              <div className="space-y-2">
+                {chartinkPresets.map((p) => (
+                  <Card key={p.id} className="p-3 hover:border-blue-500/20 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="text-xs font-semibold text-white">{p.name}</p>
+                        <p className="text-[10px] text-[#4a5a8a] mt-0.5">{p.description}</p>
+                      </div>
+                      <button
+                        onClick={() => handleCopyClause(p.scan_clause)}
+                        className={cn(
+                          'flex-shrink-0 rounded border px-2.5 py-1 text-[10px] font-semibold transition-colors',
+                          copiedClause === p.scan_clause
+                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                            : 'bg-navy-700 text-[#4a5a8a] border-[#1e2d5a] hover:text-slate-200',
+                        )}
+                      >
+                        {copiedClause === p.scan_clause ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <code className="block rounded bg-[#050d1a] px-3 py-2 text-[10px] text-blue-300 font-mono leading-relaxed break-all">
+                      {p.scan_clause}
+                    </code>
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {p.indicators.map((ind) => (
+                        <Badge key={ind} className="bg-blue-500/10 text-blue-400 border border-blue-500/20 capitalize">
+                          {ind}
+                        </Badge>
+                      ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
