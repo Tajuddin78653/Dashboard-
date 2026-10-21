@@ -1,14 +1,8 @@
 'use client';
 
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  PieChart,
-  ShieldAlert,
-  Layers,
-  ArrowUpRight,
-  ArrowDownRight,
+  TrendingUp, TrendingDown, DollarSign,
+  PieChart, ShieldAlert, Layers, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,18 +25,15 @@ interface MetricKPICardsProps {
   loading?: boolean;
 }
 
-export function MetricKPICards({
-  data = {},
-  loading = false,
-}: MetricKPICardsProps) {
+export function MetricKPICards({ data = {}, loading = false }: MetricKPICardsProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-slate-800 bg-[#0d1527] p-4 h-[88px] animate-pulse">
-            <div className="h-2 w-20 bg-slate-700 rounded mb-3" />
-            <div className="h-6 w-28 bg-slate-700 rounded mb-2" />
-            <div className="h-1.5 w-full bg-slate-800 rounded" />
+          <div key={i} className="cyber-card p-4 h-[96px] animate-pulse">
+            <div className="h-2 w-16 bg-cyan-900/40 rounded mb-3" />
+            <div className="h-7 w-28 bg-cyan-900/30 rounded mb-2" />
+            <div className="h-1.5 w-full bg-cyan-900/20 rounded" />
           </div>
         ))}
       </div>
@@ -50,147 +41,157 @@ export function MetricKPICards({
   }
 
   const {
-    dailyRealizedPnl = 0,
+    dailyRealizedPnl    = 0,
     dailyRealizedPnlPct = 0,
-    openUnrealizedPnl = 0,
+    openUnrealizedPnl   = 0,
     openUnrealizedPnlPct = 0,
-    winRatePct = 0,
-    winCount = 0,
-    lossCount = 0,
-    openPositionsCount = 0,
-    maxPositionsCount = 5,
-    dailyLossUsed = 0,
-    dailyLossLimit = 5000,
+    winRatePct          = 0,
+    winCount            = 0,
+    lossCount           = 0,
+    openPositionsCount  = 0,
+    maxPositionsCount   = 5,
+    dailyLossUsed       = 0,
+    dailyLossLimit      = 5000,
   } = data;
 
-  const isRealizedPositive = dailyRealizedPnl >= 0;
-  const isOpenPositive = openUnrealizedPnl >= 0;
-  const remainingLossBuffer = Math.max(0, dailyLossLimit - dailyLossUsed);
+  const isRealizedPos = dailyRealizedPnl >= 0;
+  const isOpenPos     = openUnrealizedPnl >= 0;
+  const bufferPct     = Math.max(0, ((dailyLossLimit - dailyLossUsed) / dailyLossLimit) * 100);
+  const slotsPct      = (openPositionsCount / maxPositionsCount) * 100;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-      
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+
       {/* ── 1. Daily Realized P&L ── */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#0d1527] p-4 shadow-sm hover:border-slate-700 transition-all">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Today Realized P&amp;L
-          </span>
-          <div className={cn('p-1.5 rounded-lg', isRealizedPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}>
-            {isRealizedPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+      <div className={cn(
+        'cyber-card p-4 group hover:scale-[1.02] transition-transform duration-200 scanlines',
+        isRealizedPos ? 'glow-border-green' : 'glow-border-red'
+      )}>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-500/70">Today Realized</span>
+          <div className={cn('p-1 rounded', isRealizedPos ? 'bg-emerald-500/10 text-[#00ff88]' : 'bg-rose-500/10 text-[#ff2d55]')}>
+            {isRealizedPos ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <p className={cn('text-xl font-mono font-bold tracking-tight', isRealizedPositive ? 'text-emerald-400' : 'text-rose-400')}>
-            {isRealizedPositive ? '+' : ''}₹{dailyRealizedPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className={cn('text-xs font-mono font-semibold flex items-center', isRealizedPositive ? 'text-emerald-400' : 'text-rose-400')}>
-            {isRealizedPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {isRealizedPositive ? '+' : ''}{dailyRealizedPnlPct.toFixed(2)}%
+        <p className={cn(
+          'text-2xl font-mono font-black tracking-tight leading-none',
+          isRealizedPos ? 'text-[#00ff88] text-glow-green' : 'text-[#ff2d55] text-glow-red'
+        )}>
+          {isRealizedPos ? '+' : ''}₹{Math.abs(dailyRealizedPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+        </p>
+        <div className="flex items-center gap-1 mt-1.5">
+          {isRealizedPos ? <ArrowUpRight className="h-3 w-3 text-[#00ff88]" /> : <ArrowDownRight className="h-3 w-3 text-[#ff2d55]" />}
+          <span className={cn('text-[10px] font-mono font-bold', isRealizedPos ? 'text-[#00ff88]/70' : 'text-[#ff2d55]/70')}>
+            {isRealizedPos ? '+' : ''}{dailyRealizedPnlPct.toFixed(2)}%
           </span>
         </div>
-        <div className="mt-2 text-[10px] text-slate-500 font-mono">
-          Settled closed positions
-        </div>
-        <div className={cn('absolute bottom-0 left-0 right-0 h-[2px]', isRealizedPositive ? 'bg-emerald-500' : 'bg-rose-500')} />
+        {/* Bottom glow bar */}
+        <div className={cn('absolute bottom-0 left-0 right-0 h-[2px]', isRealizedPos ? 'bg-[#00ff88]' : 'bg-[#ff2d55]')}
+          style={{ boxShadow: isRealizedPos ? '0 0 8px #00ff88' : '0 0 8px #ff2d55' }} />
       </div>
 
       {/* ── 2. Open Unrealized P&L ── */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#0d1527] p-4 shadow-sm hover:border-slate-700 transition-all">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Open Unrealized P&amp;L
-          </span>
-          <div className={cn('p-1.5 rounded-lg', isOpenPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}>
-            <DollarSign className="h-4 w-4" />
+      <div className={cn(
+        'cyber-card p-4 group hover:scale-[1.02] transition-transform duration-200',
+        isOpenPos ? 'glow-border-green' : 'glow-border-red'
+      )}>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-500/70">Open MTM</span>
+          <div className={cn('p-1 rounded', isOpenPos ? 'bg-emerald-500/10 text-[#00ff88]' : 'bg-rose-500/10 text-[#ff2d55]')}>
+            <DollarSign className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <p className={cn('text-xl font-mono font-bold tracking-tight', isOpenPositive ? 'text-emerald-400' : 'text-rose-400')}>
-            {isOpenPositive ? '+' : ''}₹{openUnrealizedPnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          <span className={cn('text-xs font-mono font-semibold flex items-center', isOpenPositive ? 'text-emerald-400' : 'text-rose-400')}>
-            {isOpenPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {isOpenPositive ? '+' : ''}{openUnrealizedPnlPct.toFixed(2)}%
+        <p className={cn(
+          'text-2xl font-mono font-black tracking-tight leading-none',
+          isOpenPos ? 'text-[#00ff88] text-glow-green' : 'text-[#ff2d55] text-glow-red'
+        )}>
+          {isOpenPos ? '+' : ''}₹{Math.abs(openUnrealizedPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+        </p>
+        <div className="flex items-center gap-1 mt-1.5">
+          {isOpenPos ? <ArrowUpRight className="h-3 w-3 text-[#00ff88]" /> : <ArrowDownRight className="h-3 w-3 text-[#ff2d55]" />}
+          <span className={cn('text-[10px] font-mono font-bold', isOpenPos ? 'text-[#00ff88]/70' : 'text-[#ff2d55]/70')}>
+            {isOpenPos ? '+' : ''}{openUnrealizedPnlPct.toFixed(2)}%
           </span>
         </div>
-        <div className="mt-2 text-[10px] text-slate-500 font-mono">
-          Active positions MTM
-        </div>
-        <div className={cn('absolute bottom-0 left-0 right-0 h-[2px]', isOpenPositive ? 'bg-emerald-500' : 'bg-rose-500')} />
+        <div className={cn('absolute bottom-0 left-0 right-0 h-[2px]', isOpenPos ? 'bg-[#00ff88]' : 'bg-[#ff2d55]')}
+          style={{ boxShadow: isOpenPos ? '0 0 8px #00ff88' : '0 0 8px #ff2d55' }} />
       </div>
 
-      {/* ── 3. Win Rate (Today) ── */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#0d1527] p-4 shadow-sm hover:border-slate-700 transition-all">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Win Rate (Today)
-          </span>
-          <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <PieChart className="h-4 w-4" />
+      {/* ── 3. Win Rate ── */}
+      <div className="cyber-card p-4 glow-border-purple hover:scale-[1.02] transition-transform duration-200">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-500/70">Win Rate</span>
+          <div className="p-1 rounded bg-purple-500/10 text-[#a855f7]">
+            <PieChart className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-mono font-bold text-white tracking-tight">
-            {winRatePct}%
-          </p>
-          <span className="text-xs font-mono font-semibold text-slate-400">
-            ({winCount}W / {lossCount}L)
-          </span>
+        <p className="text-2xl font-mono font-black tracking-tight leading-none text-[#a855f7] text-glow-purple">
+          {winRatePct}%
+        </p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10px] font-mono text-[#00ff88]/70 font-bold">{winCount}W</span>
+          <span className="text-[10px] text-cyan-800">/</span>
+          <span className="text-[10px] font-mono text-[#ff2d55]/70 font-bold">{lossCount}L</span>
         </div>
-        <div className="mt-2 text-[10px] text-indigo-400 font-mono">
-          {winCount + lossCount} Total closed trades
+        {/* Mini arc bar */}
+        <div className="mt-2 h-1 w-full rounded-full bg-cyan-950 overflow-hidden">
+          <div className="h-full bg-[#a855f7] rounded-full transition-all duration-700"
+            style={{ width: `${winRatePct}%`, boxShadow: '0 0 6px #a855f7' }} />
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500" />
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#a855f7]"
+          style={{ boxShadow: '0 0 8px #a855f7' }} />
       </div>
 
-      {/* ── 4. Open Positions / Max Allowed ── */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#0d1527] p-4 shadow-sm hover:border-slate-700 transition-all">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Positions Open
-          </span>
-          <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-            <Layers className="h-4 w-4" />
+      {/* ── 4. Open Positions ── */}
+      <div className="cyber-card p-4 glow-border-cyan hover:scale-[1.02] transition-transform duration-200">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-500/70">Positions</span>
+          <div className="p-1 rounded bg-cyan-500/10 text-[#00f5ff]">
+            <Layers className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-mono font-bold text-white tracking-tight">
-            {openPositionsCount}{' '}
-            <span className="text-xs font-normal text-slate-400">/ {maxPositionsCount} Max</span>
+        <div className="flex items-baseline gap-1.5">
+          <p className="text-2xl font-mono font-black tracking-tight leading-none text-[#00f5ff] text-glow-cyan">
+            {openPositionsCount}
           </p>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-            Active
-          </span>
+          <span className="text-sm font-mono text-cyan-700">/ {maxPositionsCount}</span>
         </div>
-        <div className="mt-2 text-[10px] text-slate-500 font-mono">
-          {maxPositionsCount - openPositionsCount} slot(s) available
+        <div className="mt-2 h-1 w-full rounded-full bg-cyan-950 overflow-hidden">
+          <div className="h-full bg-[#00f5ff] rounded-full transition-all duration-700"
+            style={{ width: `${slotsPct}%`, boxShadow: '0 0 6px #00f5ff' }} />
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-500" />
+        <span className="text-[10px] font-mono text-cyan-600 mt-1 block">
+          {maxPositionsCount - openPositionsCount} slot{maxPositionsCount - openPositionsCount !== 1 ? 's' : ''} free
+        </span>
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f5ff]"
+          style={{ boxShadow: '0 0 8px #00f5ff' }} />
       </div>
 
       {/* ── 5. Daily Risk Buffer ── */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-[#0d1527] p-4 shadow-sm hover:border-slate-700 transition-all col-span-2 lg:col-span-1">
-        <div className="flex items-center justify-between text-slate-400 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider">
-            Daily Risk Buffer
-          </span>
-          <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-            <ShieldAlert className="h-4 w-4" />
+      <div className={cn(
+        'cyber-card p-4 hover:scale-[1.02] transition-transform duration-200 col-span-2 lg:col-span-1',
+        bufferPct > 50 ? 'glow-border-amber' : 'glow-border-red'
+      )}>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-500/70">Risk Buffer</span>
+          <div className={cn('p-1 rounded', bufferPct > 50 ? 'bg-amber-500/10 text-[#ffaa00]' : 'bg-rose-500/10 text-[#ff2d55]')}>
+            <ShieldAlert className="h-3.5 w-3.5" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-mono font-bold text-amber-400 tracking-tight">
-            ₹{remainingLossBuffer.toLocaleString('en-IN')}
-          </p>
-          <span className="text-xs font-mono text-slate-400">
-            / ₹{dailyLossLimit.toLocaleString('en-IN')}
-          </span>
+        <p className={cn('text-2xl font-mono font-black tracking-tight leading-none',
+          bufferPct > 50 ? 'text-[#ffaa00] text-glow-amber' : 'text-[#ff2d55] text-glow-red'
+        )}>
+          ₹{(dailyLossLimit - dailyLossUsed).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+        </p>
+        <div className="mt-2 h-1 w-full rounded-full bg-cyan-950 overflow-hidden">
+          <div className={cn('h-full rounded-full transition-all duration-700',
+            bufferPct > 70 ? 'bg-[#00ff88]' : bufferPct > 40 ? 'bg-[#ffaa00]' : 'bg-[#ff2d55]'
+          )}
+            style={{ width: `${bufferPct}%`, boxShadow: bufferPct > 50 ? '0 0 6px #ffaa00' : '0 0 6px #ff2d55' }} />
         </div>
-        <div className="mt-2 text-[10px] text-slate-400 font-mono">
-          {((remainingLossBuffer / dailyLossLimit) * 100).toFixed(0)}% Buffer remaining
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500" />
+        <span className="text-[10px] font-mono text-amber-600/70 mt-1 block">{bufferPct.toFixed(0)}% remaining</span>
+        <div className={cn('absolute bottom-0 left-0 right-0 h-[2px]', bufferPct > 50 ? 'bg-[#ffaa00]' : 'bg-[#ff2d55]')}
+          style={{ boxShadow: bufferPct > 50 ? '0 0 8px #ffaa00' : '0 0 8px #ff2d55' }} />
       </div>
 
     </div>

@@ -3,16 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  TrendingUp,
-  LayoutDashboard,
-  Zap,
-  BarChart2,
-  FileText,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  History,
+  TrendingUp, LayoutDashboard, Zap, BarChart2,
+  FileText, Settings, LogOut, ChevronLeft, ChevronRight, History,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -25,7 +17,7 @@ const NAV_ITEMS = [
   { label: 'Live Signals',       href: '/signals',    Icon: Zap,             roles: ['admin','trader','viewer'] },
   { label: 'Open Positions',     href: '/positions',  Icon: TrendingUp,      roles: ['admin','trader','viewer'] },
   { label: 'Trade History',      href: '/history',    Icon: History,         roles: ['admin','trader','viewer'] },
-  { label: 'Strategy Analytics', href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
+  { label: 'Analytics',          href: '/analytics',  Icon: BarChart2,       roles: ['admin','trader','viewer'] },
   { label: 'Reports',            href: '/reports',    Icon: FileText,        roles: ['admin','trader','viewer'] },
   { label: 'Admin',              href: '/admin',      Icon: Settings,        roles: ['admin'] },
 ];
@@ -40,14 +32,10 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
   const router     = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
-  const isCollapsed = forceCollapsed ?? collapsed;
-
-  // Read logged-in user from JWT — after API fix, token contains name/email/role
-  const user     = getUser();
-  const userName = (user as any)?.name ?? (user as any)?.sub ?? 'User';
-  const userRole = (user as any)?.role ?? 'viewer';
-
-  // Only show nav items allowed for this role
+  const isCollapsed  = forceCollapsed ?? collapsed;
+  const user         = getUser();
+  const userName     = (user as any)?.name ?? (user as any)?.sub ?? 'Trader';
+  const userRole     = (user as any)?.role ?? 'viewer';
   const visibleItems = NAV_ITEMS.filter(item => item.roles.includes(userRole));
 
   function handleLogout() {
@@ -56,27 +44,32 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
   }
 
   return (
-    <aside
-      className={cn(
-        'flex h-full flex-col bg-navy-900 border-r border-[#1e2d5a]',
-        'transition-[width] duration-300 ease-in-out overflow-hidden',
-        isCollapsed ? 'w-16' : 'w-60',
-        className,
-      )}
-    >
+    <aside className={cn(
+      'flex h-full flex-col',
+      'bg-[#020209] border-r border-cyan-900/20',
+      'transition-[width] duration-300 ease-in-out overflow-hidden',
+      isCollapsed ? 'w-14' : 'w-56',
+      className,
+    )}>
+
       {/* ── Logo ── */}
       <div className={cn(
-        'flex items-center gap-2.5 px-4 py-5 border-b border-[#1e2d5a] flex-shrink-0',
+        'flex items-center gap-2.5 px-4 py-4 border-b border-cyan-900/20 flex-shrink-0',
         isCollapsed && 'justify-center px-0',
       )}>
-        <TrendingUp className="h-6 w-6 text-gold-500 flex-shrink-0" />
+        <div className="relative flex-shrink-0">
+          <TrendingUp className="h-5 w-5 text-[#00f5ff]"
+            style={{ filter: 'drop-shadow(0 0 6px rgba(0,245,255,0.8))' }} />
+        </div>
         {!isCollapsed && (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg font-bold text-gold-500 tracking-tight whitespace-nowrap">
-              TradeDash
+            <span className="text-base font-black text-white tracking-tight whitespace-nowrap"
+              style={{ textShadow: '0 0 12px rgba(0,245,255,0.4)' }}>
+              Trade<span className="text-[#00f5ff]">Dash</span>
             </span>
-            <span className="rounded bg-gold-500/20 px-1.5 py-0.5 text-[10px] font-bold text-gold-400 uppercase tracking-wider whitespace-nowrap">
-              Pro
+            <span className="rounded bg-[#00f5ff]/10 border border-[#00f5ff]/30 px-1.5 py-0.5 text-[9px] font-black text-[#00f5ff] uppercase tracking-wider"
+              style={{ boxShadow: '0 0 6px rgba(0,245,255,0.2)' }}>
+              PRO
             </span>
           </div>
         )}
@@ -93,23 +86,31 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
                   href={href}
                   title={isCollapsed ? label : undefined}
                   className={cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium',
-                    'transition-colors duration-150 relative group',
+                    'relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-semibold',
+                    'transition-all duration-150 group overflow-hidden',
                     isCollapsed && 'justify-center px-0',
                     isActive
-                      ? 'bg-gold-500/10 text-gold-400'
-                      : 'text-[#7a8db3] hover:bg-navy-700 hover:text-slate-100',
+                      ? 'bg-cyan-500/8 text-[#00f5ff]'
+                      : 'text-slate-500 hover:bg-cyan-950/40 hover:text-slate-200',
                   )}
                 >
+                  {/* Active left bar */}
                   {isActive && (
-                    <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-gold-500" />
+                    <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-[#00f5ff]"
+                      style={{ boxShadow: '0 0 8px #00f5ff' }} />
+                  )}
+                  {/* Active background shimmer */}
+                  {isActive && (
+                    <span className="absolute inset-0 rounded-lg"
+                      style={{ background: 'linear-gradient(90deg, rgba(0,245,255,0.06), transparent)' }} />
                   )}
                   <Icon className={cn(
-                    'h-4.5 w-4.5 flex-shrink-0',
-                    isActive ? 'text-gold-400' : 'text-[#7a8db3] group-hover:text-slate-100',
-                  )} />
+                    'h-4 w-4 flex-shrink-0 relative z-10',
+                    isActive ? 'text-[#00f5ff]' : 'text-slate-600 group-hover:text-slate-300',
+                  )}
+                    style={isActive ? { filter: 'drop-shadow(0 0 4px rgba(0,245,255,0.7))' } : {}} />
                   {!isCollapsed && (
-                    <span className="truncate">{label}</span>
+                    <span className="truncate relative z-10">{label}</span>
                   )}
                 </Link>
               </li>
@@ -124,15 +125,14 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
           <button
             onClick={() => setCollapsed(v => !v)}
             className={cn(
-              'flex items-center gap-2 w-full rounded-md px-3 py-2 text-xs text-[#4a5a8a]',
-              'hover:bg-navy-700 hover:text-slate-300 transition-colors duration-150',
+              'flex items-center gap-2 w-full rounded-lg px-3 py-2 text-xs text-slate-600',
+              'hover:bg-cyan-950/30 hover:text-[#00f5ff] transition-colors duration-150',
               isCollapsed && 'justify-center px-0',
             )}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed
-              ? <ChevronRight className="h-4 w-4 flex-shrink-0" />
-              : <><ChevronLeft className="h-4 w-4 flex-shrink-0" /><span>Collapse</span></>
+              ? <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
+              : <><ChevronLeft className="h-3.5 w-3.5 flex-shrink-0" /><span>Collapse</span></>
             }
           </button>
         </div>
@@ -140,22 +140,22 @@ export function Sidebar({ forceCollapsed, className }: SidebarProps) {
 
       {/* ── User Section ── */}
       <div className={cn(
-        'border-t border-[#1e2d5a] p-3 flex-shrink-0',
-        isCollapsed ? 'flex flex-col items-center gap-2' : 'flex items-center gap-3',
+        'border-t border-cyan-900/20 p-3 flex-shrink-0',
+        isCollapsed ? 'flex flex-col items-center gap-2' : 'flex items-center gap-2.5',
       )}>
-        <Avatar name={userName} size="sm" className="flex-shrink-0" />
+        <Avatar name={userName} size="sm" className="flex-shrink-0 ring-1 ring-cyan-700/40" />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">{userName}</p>
-            <p className="text-xs text-[#4a5a8a] truncate capitalize">{userRole}</p>
+            <p className="text-xs font-bold text-slate-200 truncate">{userName}</p>
+            <p className="text-[10px] text-cyan-800 truncate capitalize font-mono">{userRole}</p>
           </div>
         )}
         <button
           title="Logout"
           onClick={handleLogout}
-          className="flex-shrink-0 rounded-md p-1.5 text-[#4a5a8a] hover:bg-navy-700 hover:text-danger transition-colors duration-150"
+          className="flex-shrink-0 rounded-lg p-1.5 text-slate-600 hover:bg-rose-950/40 hover:text-[#ff2d55] transition-colors duration-150"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3.5 w-3.5" />
         </button>
       </div>
     </aside>

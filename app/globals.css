@@ -1,44 +1,64 @@
 @import "tailwindcss";
 
-/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+/* ─── Cyberpunk Neon Terminal — Design Tokens ────────────────────────────── */
 @theme {
-  /* Navy palette */
-  --color-navy-950: #040d21;
-  --color-navy-900: #071330;
-  --color-navy-800: #0d1f4c;
-  --color-navy-700: #122666;
-  --color-navy-600: #1a3380;
+  /* Base surfaces */
+  --color-cyber-black:   #00000f;
+  --color-cyber-950:     #020209;
+  --color-cyber-900:     #05050f;
+  --color-cyber-800:     #0a0a1a;
+  --color-cyber-700:     #0f0f24;
+  --color-cyber-600:     #14142e;
+
+  /* Neon accents */
+  --color-neon-cyan:     #00f5ff;
+  --color-neon-indigo:   #7c3aed;
+  --color-neon-purple:   #a855f7;
+  --color-neon-green:    #00ff88;
+  --color-neon-red:      #ff2d55;
+  --color-neon-amber:    #ffaa00;
+  --color-neon-blue:     #0080ff;
+
+  /* Legacy navy (keep for compatibility) */
+  --color-navy-950:      #00000f;
+  --color-navy-900:      #05050f;
+  --color-navy-800:      #0a0a1a;
+  --color-navy-700:      #0f0f24;
+  --color-navy-600:      #14142e;
 
   /* Gold palette */
-  --color-gold-400: #fbbf24;
-  --color-gold-500: #f59e0b;
-  --color-gold-600: #d97706;
+  --color-gold-400:      #ffaa00;
+  --color-gold-500:      #ff9900;
+  --color-gold-600:      #cc7700;
 
   /* Semantic surface tokens */
-  --color-surface: #0d1f4c;   /* navy-800 */
-  --color-card:    #071330;   /* navy-900 */
-  --color-border:  #1e2d5a;
-  --color-muted:   #4a5a8a;
+  --color-surface:       #0a0a1a;
+  --color-card:          #05050f;
+  --color-border:        #1a1a3a;
+  --color-muted:         #3a3a6a;
 
   /* State colors */
-  --color-success: #22c55e;
-  --color-danger:  #ef4444;
-  --color-warning: #f59e0b;
+  --color-success:       #00ff88;
+  --color-danger:        #ff2d55;
+  --color-warning:       #ffaa00;
 
   /* Fonts */
-  --font-inter:    var(--font-inter);
-  --font-mono:     var(--font-jetbrains-mono);
+  --font-inter:          var(--font-inter);
+  --font-mono:           var(--font-jetbrains-mono);
 
-  /* Custom animations */
-  --animate-fade-in:    fade-in 0.3s ease forwards;
-  --animate-slide-up:   slide-up 0.3s ease forwards;
-  --animate-pulse-gold: pulse-gold 2s ease-in-out infinite;
+  /* Animations */
+  --animate-fade-in:      fade-in 0.3s ease forwards;
+  --animate-slide-up:     slide-up 0.25s ease forwards;
+  --animate-pulse-gold:   pulse-gold 2s ease-in-out infinite;
+  --animate-neon-pulse:   neon-pulse 2s ease-in-out infinite;
+  --animate-scanline:     scanline 8s linear infinite;
+  --animate-float:        float 6s ease-in-out infinite;
 }
 
-/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-up {
@@ -47,107 +67,171 @@
 }
 
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
-  50%       { box-shadow: 0 0 12px 4px rgba(251, 191, 36, 0.35); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0); }
+  50%       { box-shadow: 0 0 16px 4px rgba(255, 170, 0, 0.25); }
 }
 
-/* ─── Base Layer ────────────────────────────────────────────────────────────── */
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+
+@keyframes glow-green {
+  0%, 100% { text-shadow: 0 0 8px rgba(0, 255, 136, 0.8); }
+  50%       { text-shadow: 0 0 20px rgba(0, 255, 136, 1), 0 0 40px rgba(0, 255, 136, 0.4); }
+}
+
+@keyframes glow-red {
+  0%, 100% { text-shadow: 0 0 8px rgba(255, 45, 85, 0.8); }
+  50%       { text-shadow: 0 0 20px rgba(255, 45, 85, 1), 0 0 40px rgba(255, 45, 85, 0.4); }
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ─── Base Layer ─────────────────────────────────────────────────────────── */
 @layer base {
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
+  *, *::before, *::after { box-sizing: border-box; }
 
   html {
     height: 100%;
     font-family: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
-    background-color: var(--color-navy-950);
-    color: #e2e8f0;
+    background-color: var(--color-cyber-950);
+    color: #c8d0e8;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     min-height: 100%;
-    background-color: var(--color-navy-950);
+    background-color: var(--color-cyber-950);
+    /* Subtle grid background */
+    background-image:
+      linear-gradient(rgba(0, 245, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 245, 255, 0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  /* Gold selection highlight */
   ::selection {
-    background-color: rgba(251, 191, 36, 0.3);
+    background-color: rgba(0, 245, 255, 0.2);
     color: #fff;
   }
 
-  /* ── Custom Scrollbar ── */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--color-navy-900);
-  }
-
+  /* Neon scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--color-cyber-900); }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-gold-600);
-    border-radius: 3px;
+    background: var(--color-neon-cyan);
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(0, 245, 255, 0.6);
   }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-gold-500);
-  }
-
-  /* Firefox scrollbar */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-gold-600) var(--color-navy-900);
-  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-neon-purple); }
+  * { scrollbar-width: thin; scrollbar-color: var(--color-neon-cyan) var(--color-cyber-900); }
 }
 
-/* ─── Utility Classes ───────────────────────────────────────────────────────── */
+/* ─── Utility Classes ────────────────────────────────────────────────────── */
 @layer utilities {
-  /* Monospace font for price/number displays */
+
+  /* Monospace numbers */
   .font-mono {
     font-family: var(--font-jetbrains-mono, ui-monospace, "JetBrains Mono", Menlo, monospace);
     font-variant-numeric: tabular-nums;
   }
 
-  /* P&L colours */
-  .text-profit {
-    color: var(--color-success);
-  }
-
-  .text-loss {
-    color: var(--color-danger);
-  }
+  /* P&L text */
+  .text-profit { color: var(--color-neon-green); }
+  .text-loss   { color: var(--color-neon-red); }
 
   /* Animation utilities */
-  .animate-fade-in {
-    animation: var(--animate-fade-in);
+  .animate-fade-in    { animation: var(--animate-fade-in); }
+  .animate-slide-up   { animation: var(--animate-slide-up); }
+  .animate-pulse-gold { animation: var(--animate-pulse-gold); }
+  .animate-neon-pulse { animation: var(--animate-neon-pulse); }
+  .animate-float      { animation: var(--animate-float); }
+
+  /* Neon glow text */
+  .text-glow-cyan   { text-shadow: 0 0 10px rgba(0, 245, 255, 0.8),  0 0 20px rgba(0, 245, 255, 0.4); }
+  .text-glow-green  { text-shadow: 0 0 10px rgba(0, 255, 136, 0.8),  0 0 20px rgba(0, 255, 136, 0.4); }
+  .text-glow-red    { text-shadow: 0 0 10px rgba(255, 45, 85, 0.8),  0 0 20px rgba(255, 45, 85, 0.4); }
+  .text-glow-purple { text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 20px rgba(168, 85, 247, 0.4); }
+  .text-glow-amber  { text-shadow: 0 0 10px rgba(255, 170, 0, 0.8),  0 0 20px rgba(255, 170, 0, 0.4); }
+
+  /* Neon border glow boxes */
+  .glow-border-cyan   { box-shadow: 0 0 0 1px rgba(0, 245, 255, 0.3),  0 0 20px rgba(0, 245, 255, 0.08);  }
+  .glow-border-green  { box-shadow: 0 0 0 1px rgba(0, 255, 136, 0.3),  0 0 20px rgba(0, 255, 136, 0.08);  }
+  .glow-border-red    { box-shadow: 0 0 0 1px rgba(255, 45, 85, 0.3),  0 0 20px rgba(255, 45, 85, 0.08);  }
+  .glow-border-purple { box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3), 0 0 20px rgba(168, 85, 247, 0.08); }
+  .glow-border-amber  { box-shadow: 0 0 0 1px rgba(255, 170, 0, 0.3),  0 0 20px rgba(255, 170, 0, 0.08);  }
+  .glow-border-indigo { box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.3), 0 0 20px rgba(124, 58, 237, 0.08); }
+
+  /* Cyber card base */
+  .cyber-card {
+    background: linear-gradient(135deg, rgba(10,10,26,0.95) 0%, rgba(5,5,15,0.98) 100%);
+    border: 1px solid rgba(0, 245, 255, 0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
   }
 
-  .animate-slide-up {
-    animation: var(--animate-slide-up);
+  .cyber-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.4), transparent);
   }
 
-  .animate-pulse-gold {
-    animation: var(--animate-pulse-gold);
+  /* Corner accent */
+  .cyber-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 20px; height: 20px;
+    border-top: 1px solid rgba(0, 245, 255, 0.5);
+    border-left: 1px solid rgba(0, 245, 255, 0.5);
+    border-radius: 12px 0 0 0;
   }
 
-  /* Card border-left accent */
-  .card-accent-gold {
-    border-left: 3px solid var(--color-gold-500);
+  /* Scanline overlay (optional, very subtle) */
+  .scanlines::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
   }
 
-  /* Gold focus ring */
-  .focus-gold:focus {
-    outline: 2px solid var(--color-gold-500);
-    outline-offset: 2px;
+  /* Bento grid helper */
+  .bento-grid {
+    display: grid;
+    gap: 12px;
   }
 
+  .card-accent-gold { border-left: 2px solid var(--color-gold-500); }
+
+  .focus-gold:focus,
   .focus-gold:focus-visible {
-    outline: 2px solid var(--color-gold-500);
+    outline: 2px solid var(--color-neon-cyan);
     outline-offset: 2px;
   }
 }
